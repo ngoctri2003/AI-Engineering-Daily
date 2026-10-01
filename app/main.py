@@ -66,6 +66,24 @@ def build_user_prompt(cands, now, recent):
         f"DỮ LIỆU ỨNG VIÊN (JSON):\n{json.dumps(cands, ensure_ascii=False)}\n\n{SCHEMA}")
 
 
+def make_trend(system, items):
+    """Viết dòng xu hướng SAU khi đã chốt tin, chỉ dựa trên các tin này (tránh nhắc tin không có trong bản tin)."""
+    if len(items) < 2:
+        return ""
+    brief = [{"headline": i["headline"], "label": i["label"]} for i in items]
+    try:
+        res = llm.call_json(
+            system,
+            "Viết 1 câu xu hướng chung (tối đa 30 từ, không em dash, không emoji) CHỈ dựa trên các tin sau, "
+            f"không nhắc sản phẩm hay sự kiện nào ngoài danh sách. Danh sách: {json.dumps(brief, ensure_ascii=False)}\n"
+            'Trả JSON: {"trend": "..."}. Nếu không có xu hướng chung rõ ràng thì trend là chuỗi rỗng.')
+        t = formatter.clean(res.get("trend", "")) if isinstance(res, dict) else ""
+    except Exception as ex:
+        print(f"[llm] bỏ dòng xu hướng: {ex}")
+        return ""
+    return "" if formatter.EM_DASH in t or formatter.EMOJI_RE.search(t) else t
+
+
 def run(dry_run=False, mock_file=None):
     now = datetime.now(timezone.utc)
     if now.astimezone(TZ_VN).weekday() >= 5 and not os.environ.get("FORCE"):
@@ -134,7 +152,8 @@ def run(dry_run=False, mock_file=None):
         return 0
 
     date_str = f"{now.astimezone(TZ_VN):%d/%m/%Y}"
-    text = formatter.render_digest(items, result.get("trend", ""), date_str)
+    trend = result.get("trend", "") if mock else make_trend(system, items)
+    text = formatter.render_digest(items, trend, date_str)
     problems = formatter.check_digest(text)
     if problems:
         raise RunError(f"Bản tin không đạt kiểm tra cuối: {'; '.join(problems)}")
@@ -144,16 +163,15 @@ def run(dry_run=False, mock_file=None):
     notes += notes_drop
     notes += [f"Nguồn mâu thuẫn: {c}" for c in result.get("conflicts", [])]
     notes += [f"Nguồn lỗi: {k}: {v}" for k, v in status.items() if v.startswith("LỖI")]
-    notes_text = ("*Ghi chú (ngoài bản tin)*\n" + "\n".join(f"• {n}" for n in notes)) if notes else None
-
+    # Ghi chú chỉ ghi vào log Actions, không đăng lên Slack
     print(text)
-    if notes_text:
-        print("\n---\n" + notes_text)
+    if notes:
+        print("\n--- Ghi chú (chỉ trong log) ---\n" + "\n".join(f"- {n}" for n in notes))
     if dry_run:
         print("\n[dry-run] Không đăng Slack, không ghi state.")
         return 0
 
-    slack.post(text, notes_text)
+    slack.post(text)
     for it in items:
         state["posted"].append({"date": now.isoformat(), "headline": it["headline"], "url": it["url"]})
     state["posted"] = state["posted"][-200:]

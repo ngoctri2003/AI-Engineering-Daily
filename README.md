@@ -8,7 +8,7 @@ Chi phí: 0 đồng nếu dùng GitHub Actions (repo public không giới hạn 
 1. `app/sources.py` đọc feed Atom/RSS và trang changelog trong `app/sources.json`, lọc 48 giờ.
 2. `app/llm.py` gọi 1 request LLM (system prompt = `app/rules.md`) để chọn tin và viết nội dung dạng JSON.
 3. `app/formatter.py` kiểm tra checklist (label, tag, 50-80 từ, em dash, emoji, link phải nằm trong dữ liệu nguồn, primary source, 48h) rồi tự ghép định dạng Slack. Tin trượt thì sửa 1 lần, vẫn trượt thì loại.
-4. `app/slack.py` đăng bản tin vào channel allow-list, ghi chú tin bị loại/nguồn lỗi đăng thành reply trong thread (ngoài bản tin).
+4. `app/slack.py` đăng bản tin vào channel allow-list, chỉ đăng bản tin; ghi chú tin bị loại/nguồn lỗi chỉ nằm trong log Actions. Dòng xu hướng được viết sau khi chốt tin.
 5. `state/posted.json` lưu tin đã đăng để không đăng lại.
 
 ## Cài đặt (khoảng 20 phút)

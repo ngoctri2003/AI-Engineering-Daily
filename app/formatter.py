@@ -17,11 +17,14 @@ VENDOR_WORDS = ("cho biết", "công bố", "tuyên bố", "thông báo", "annou
 
 def unwrap_item(obj):
     """Phản hồi sửa tin đôi khi bị bọc: {"item": {...}} hoặc {"items": [{...}]}."""
-    if isinstance(obj, dict):
-        if isinstance(obj.get("item"), dict):
-            return obj["item"]
+    if isinstance(obj, list):
+        obj = next((x for x in obj if isinstance(x, dict)), {})
+    if isinstance(obj, dict) and "headline" not in obj:
         if isinstance(obj.get("items"), list) and obj["items"] and isinstance(obj["items"][0], dict):
             return obj["items"][0]
+        for v in obj.values():  # bọc kiểu {"item": {...}} hoặc khóa tùy ý
+            if isinstance(v, dict) and "headline" in v:
+                return v
     return obj if isinstance(obj, dict) else {}
 
 
@@ -71,8 +74,11 @@ def validate_item(item, candidate_urls, now, window_hours=48):
         d = datetime.fromisoformat(str(pub).replace("Z", "+00:00"))
         if d.tzinfo is None:
             d = d.replace(tzinfo=timezone.utc)
-        # độ chính xác theo ngày nên cho dư 1 ngày
-        if d < now - timedelta(hours=window_hours) - timedelta(days=1) or d > now + timedelta(hours=2):
+        cutoff = now - timedelta(hours=window_hours)
+        date_only = (d.hour, d.minute, d.second) == (0, 0, 0)
+        # nguồn chỉ có ngày (00:00): chấp nhận nếu ngày đó nằm trong ngày của mốc cutoff trở đi
+        too_old = d.date() < cutoff.date() if date_only else d < cutoff
+        if too_old or d > now + timedelta(hours=2):
             errs.append(f"ngoài cửa sổ {window_hours}h: {pub}")
     except ValueError:
         errs.append(f"published_at không hợp lệ: {pub!r}")

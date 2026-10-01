@@ -56,6 +56,12 @@ class T(unittest.TestCase):
         old = (NOW - timedelta(days=6)).isoformat()
         self.assertTrue(any("ngoài cửa sổ" in e for e in errs(published_at=old)))
 
+    def test_date_only_window(self):
+        ok = (NOW - timedelta(hours=40)).strftime("%Y-%m-%dT00:00:00+00:00")
+        old = (NOW - timedelta(days=4)).strftime("%Y-%m-%dT00:00:00+00:00")
+        self.assertFalse(any("cửa sổ" in e for e in errs(published_at=ok)))
+        self.assertTrue(any("cửa sổ" in e for e in errs(published_at=old)))
+
     def test_missing_noteworthy(self):
         self.assertTrue(any("Đáng chú ý" in e for e in errs(noteworthy="")))
 
@@ -86,6 +92,8 @@ class UnwrapTests(unittest.TestCase):
         self.assertEqual(f.unwrap_item({"items": [GOOD]}), GOOD)
         self.assertEqual(f.unwrap_item(GOOD), GOOD)
         self.assertEqual(f.unwrap_item([1, 2]), {})
+        self.assertEqual(f.unwrap_item([GOOD]), GOOD)
+        self.assertEqual(f.unwrap_item({"result": GOOD}), GOOD)
 
 
 class AlertTests(unittest.TestCase):
