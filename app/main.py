@@ -32,6 +32,7 @@ SCHEMA = """Trả về DUY NHẤT một object JSON:
       "try": "tùy chọn, cụ thể làm được ngay, hoặc rỗng",
       "caution": "tùy chọn, hoặc rỗng",
       "url": "PHẢI là đúng một url trong danh sách ứng viên",
+      "source_kind": "official hoặc community (community CHỈ cho ứng viên có kind=community, tức dev.to)",
       "is_primary": true,
       "published_at": "ISO 8601, lấy từ dữ liệu ứng viên"
     }
@@ -40,7 +41,10 @@ SCHEMA = """Trả về DUY NHẤT một object JSON:
   "conflicts": ["mô tả nguồn mâu thuẫn nếu có"]
 }
 Ràng buộc: tối đa 5 items, ưu tiên 3; mỗi item 50-80 từ (description + noteworthy + try + caution);
-chỉ dùng thông tin có trong dữ liệu ứng viên; không đủ tin giá trị thì items = []."""
+chỉ dùng thông tin có trong dữ liệu ứng viên; không đủ tin giá trị thì items = [].
+Tin cộng đồng (kind=community, dev.to): tối đa 1 tin mỗi ngày, chỉ chọn khi là cuộc thảo luận nổi bật về nghề/kỹ thuật phần mềm với AI,
+viết rõ đây là quan điểm của tác giả bài viết ("Tác giả bài viết cho rằng..."), is_primary=false, source_kind="community".
+Mỗi tin chỉ ứng với MỘT link và MỘT sự kiện; giữ số phiên bản/tên chính xác trong headline (ví dụ v2.1.285)."""
 
 
 class RunError(Exception):
@@ -111,6 +115,7 @@ def run(dry_run=False, mock_file=None):
         print("Không có ứng viên nào trong 48 giờ. Không đăng.")
         return 0
     cand_urls = {c["url"] for c in cands}
+    community_urls = {c["url"] for c in cands if c.get("kind") == "community"}
 
     state = load_state()
     recent_cut = (now - timedelta(days=3)).isoformat()
@@ -119,6 +124,7 @@ def run(dry_run=False, mock_file=None):
     result = llm.call_json(system, build_user_prompt(cands, now, recent),
                            mock["llm_response"] if mock else None)
     items, notes_drop, unusable = [], [], 0
+    hub_urls = {x["url"] for x in json.loads((HERE / "sources.json").read_text()) if x["type"] == "html"}
     raw_items = result.get("items", []) if isinstance(result, dict) else []
     for it in raw_items[:MAX_ITEMS]:
         if not isinstance(it, dict) or sum(1 for k in ("label", "headline", "url", "description") if it.get(k)) < 2:
@@ -126,7 +132,7 @@ def run(dry_run=False, mock_file=None):
             unusable += 1
             print(f"[llm] item không dùng được, bỏ qua sửa: {json.dumps(it, ensure_ascii=False)[:300]}")
             continue
-        errs = formatter.validate_item(it, cand_urls, now)
+        errs = formatter.validate_item(it, cand_urls, now, community_urls=community_urls)
         if errs and not mock:
             # sửa 1 lần, tốn thêm 1 request
             fix = llm.call_json(
@@ -135,11 +141,17 @@ def run(dry_run=False, mock_file=None):
                 f"Lỗi: {errs}\nItem: {json.dumps(it, ensure_ascii=False)}\n"
                 f"Url hợp lệ: {sorted(cand_urls)[:80]}\nTrả về object item JSON duy nhất.")
             it = formatter.unwrap_item(fix)
-            errs = formatter.validate_item(it, cand_urls, now)
+            errs = formatter.validate_item(it, cand_urls, now, community_urls=community_urls)
         if errs:
             notes_drop.append(f"Loại: {it.get('headline', '?')} ({'; '.join(errs)})")
             continue
-        if any(it["url"] == r["url"] and it["headline"] == r["headline"] for r in recent):
+        # chống trùng theo link (LLM viết lại headline mỗi lần). Trang tổng hợp (changelog) dùng chung link nên so thêm headline
+        dup = any(it["url"] == r["url"] and (it["url"] not in hub_urls or it["headline"] == r["headline"]) for r in recent)
+        if dup:
+            notes_drop.append(f"Trùng tin đã đăng: {it.get('headline')}")
+            continue
+        if it.get("source_kind") == "community" and any(x.get("source_kind") == "community" for x in items):
+            notes_drop.append(f"Quá 1 tin cộng đồng: {it.get('headline')}")
             continue
         items.append(it)
 

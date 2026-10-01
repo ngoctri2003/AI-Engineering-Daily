@@ -107,6 +107,37 @@ def fetch_hn(src, cutoff):
     return out
 
 
+def fetch_devto(src, cutoff):
+    """Bài nổi bật trên dev.to (nguồn cộng đồng, ý kiến cá nhân, KHÔNG phải primary source)."""
+    out, seen = [], set()
+    min_score = src.get("min_score", 40)
+    urls = ["https://dev.to/api/articles?top=2&per_page=30"] + [
+        f"https://dev.to/api/articles?top=2&per_page=30&tag={urllib.parse.quote(t)}" for t in src.get("queries", [])]
+    for url in urls:
+        try:
+            arts = json.loads(http_get(url))
+        except Exception:
+            continue
+        for a in arts:
+            u = a.get("url") or ""
+            d = parse_date(a.get("published_at") or a.get("published_timestamp"))
+            score = a.get("positive_reactions_count", 0) + 2 * a.get("comments_count", 0)
+            if not u or u in seen or d is None or d < cutoff or score < min_score:
+                continue
+            seen.add(u)
+            out.append({
+                "source": src["name"], "priority": src["priority"], "kind": "community",
+                "title": a.get("title", ""), "url": u,
+                "published_at": d.astimezone(timezone.utc).isoformat(),
+                "score": score,
+                "snippet": (f"Bài viết cá nhân trên dev.to (nguồn cộng đồng, không phải nguồn chính thức). "
+                            f"reactions={a.get('positive_reactions_count')}, comments={a.get('comments_count')}, "
+                            f"tags={a.get('tag_list')}. Mô tả: {a.get('description', '')}"),
+            })
+    out.sort(key=lambda c: -c["score"])
+    return out[:5]
+
+
 def collect(sources, now, window_hours=48, log=print):
     cutoff = now - timedelta(hours=window_hours)
     cands, status = [], {}
@@ -116,6 +147,8 @@ def collect(sources, now, window_hours=48, log=print):
                 got = parse_feed(http_get(src["url"]), src, cutoff)
             elif src["type"] == "html":
                 got = fetch_html_source(src)
+            elif src["type"] == "devto":
+                got = fetch_devto(src, cutoff)
             elif src["type"] == "hn":
                 got = fetch_hn(src, cutoff)
             else:

@@ -39,7 +39,7 @@ def body_words(item):
     return len(" ".join(clean(p) for p in parts if p).split())
 
 
-def validate_item(item, candidate_urls, now, window_hours=48):
+def validate_item(item, candidate_urls, now, window_hours=48, community_urls=()):
     """Trả list lỗi (rỗng = đạt)."""
     errs = []
     if item.get("label") not in LABELS:
@@ -67,7 +67,11 @@ def validate_item(item, candidate_urls, now, window_hours=48):
         errs.append("link không hợp lệ")
     elif url not in candidate_urls:
         errs.append("link không nằm trong dữ liệu nguồn (nghi bịa link)")
-    if item.get("is_primary") is not True:
+    community = item.get("source_kind") == "community"
+    if community:
+        if url not in community_urls:
+            errs.append("source_kind=community nhưng link không thuộc nguồn cộng đồng")
+    elif item.get("is_primary") is not True:
         errs.append("không phải primary source")
     pub = item.get("published_at")
     try:
@@ -93,8 +97,11 @@ def render_item(item):
     lines.append(f"💡 Đáng chú ý: {clean(item['noteworthy'])}")
     if clean(item.get("try")):
         lines.append(f"🧪 Nên thử: {clean(item['try'])}")
-    if clean(item.get("caution")):
-        lines.append(f"⚠️ Lưu ý: {clean(item['caution'])}")
+    caution = clean(item.get("caution"))
+    if item.get("source_kind") == "community" and "dev.to" not in caution:
+        caution = (caution + " " if caution else "") + "Quan điểm của tác giả trên dev.to, chưa được kiểm chứng."
+    if caution:
+        lines.append(f"⚠️ Lưu ý: {caution}")
     lines.append(f"🔗 {item['url']}")
     return "\n".join(lines)
 

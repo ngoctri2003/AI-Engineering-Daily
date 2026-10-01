@@ -62,6 +62,14 @@ class T(unittest.TestCase):
         self.assertFalse(any("cửa sổ" in e for e in errs(published_at=ok)))
         self.assertTrue(any("cửa sổ" in e for e in errs(published_at=old)))
 
+    def test_community_item(self):
+        c = {"https://dev.to/x/y"}
+        e = f.validate_item({**GOOD, "url": "https://dev.to/x/y", "is_primary": False, "source_kind": "community"}, c, NOW, community_urls=c)
+        self.assertEqual(e, [])
+        e2 = f.validate_item({**GOOD, "is_primary": False, "source_kind": "community"}, {GOOD["url"]}, NOW)
+        self.assertTrue(any("cộng đồng" in x for x in e2))
+        self.assertIn("dev.to", f.render_item({**GOOD, "source_kind": "community"}))
+
     def test_missing_noteworthy(self):
         self.assertTrue(any("Đáng chú ý" in e for e in errs(noteworthy="")))
 
