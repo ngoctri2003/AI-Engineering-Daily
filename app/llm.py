@@ -14,7 +14,7 @@ def _short_error(raw):
         return repr(raw[:200])
 
 
-def _post(url, headers, body, retries=3):
+def _post(url, headers, body, retries=2):
     data = json.dumps(body).encode()
     for attempt in range(retries):
         req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", **headers})
@@ -23,7 +23,7 @@ def _post(url, headers, body, retries=3):
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503) and attempt < retries - 1:
-                time.sleep(15 * (attempt + 1))
+                time.sleep(4)  # chờ ngắn rồi chuyển model dự phòng, không treo lâu
                 continue
             raise RuntimeError(f"LLM HTTP {e.code}: {_short_error(e.read())}")
     raise RuntimeError("LLM retry hết lượt")
@@ -94,6 +94,9 @@ def call_json(system, user, mock_payload=None):
             if text.startswith("```"):
                 text = text.strip("`").removeprefix("json").strip()
             return json.loads(text)
+        except json.JSONDecodeError as ex:
+            last = ex
+            print(f"[llm] model {m} trả JSON hỏng: {ex}; đầu phản hồi: {text[:300]!r}")
         except Exception as ex:
             last = ex
             print(f"[llm] model {m} lỗi: {ex}")

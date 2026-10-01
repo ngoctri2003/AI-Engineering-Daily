@@ -100,8 +100,14 @@ def run(dry_run=False, mock_file=None):
 
     result = llm.call_json(system, build_user_prompt(cands, now, recent),
                            mock["llm_response"] if mock else None)
-    items, notes_drop = [], []
-    for it in result.get("items", [])[:MAX_ITEMS]:
+    items, notes_drop, unusable = [], [], 0
+    raw_items = result.get("items", []) if isinstance(result, dict) else []
+    for it in raw_items[:MAX_ITEMS]:
+        if not isinstance(it, dict) or sum(1 for k in ("label", "headline", "url", "description") if it.get(k)) < 2:
+            # item rỗng/sai cấu trúc: không tốn request sửa, in ra để biết model trả gì
+            unusable += 1
+            print(f"[llm] item không dùng được, bỏ qua sửa: {json.dumps(it, ensure_ascii=False)[:300]}")
+            continue
         errs = formatter.validate_item(it, cand_urls, now)
         if errs and not mock:
             # sửa 1 lần, tốn thêm 1 request
@@ -119,6 +125,8 @@ def run(dry_run=False, mock_file=None):
             continue
         items.append(it)
 
+    if not items and raw_items and unusable == len(raw_items[:MAX_ITEMS]):
+        raise RunError("LLM trả item rỗng/sai cấu trúc (model có thể quá tải hoặc không theo schema). Xem log bước Run.")
     if not items:
         print("Không có tin đạt chuẩn. Không đăng.")
         for n in notes_drop:
