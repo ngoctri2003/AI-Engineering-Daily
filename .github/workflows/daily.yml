@@ -1,0 +1,53 @@
+name: AI Engineering Daily
+
+on:
+  schedule:
+    - cron: "0 2 * * 1-5"   # 02:00 UTC = 09:00 giờ VN (GMT+7), thứ 2 đến thứ 6. GitHub có thể trễ vài phút.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Chạy thử, không đăng Slack"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # để commit state/posted.json (chống đăng trùng)
+
+concurrency:
+  group: ai-eng-daily
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test validator
+        run: python -m unittest discover -s tests -v
+      - name: Run
+        env:
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'gemini-3.7-flash' }}
+          LLM_FALLBACK_MODEL: ${{ vars.LLM_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C5RGC88SX' }}
+          SLACK_ALLOWED_CHANNELS: ${{ vars.SLACK_ALLOWED_CHANNELS || 'C0C5RGC88SX' }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then export FORCE=1; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            python -m app.main --dry-run
+          else
+            python -m app.main
+          fi
+      - name: Lưu state chống trùng
+        if: github.event_name == 'schedule' || inputs.dry_run == false
+        run: |
+          git config user.name "ai-eng-daily-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add state/posted.json || true
+          git diff --cached --quiet || (git commit -m "chore: update posted state [skip ci]" && git push)

@@ -1,0 +1,17 @@
+[
+  {"name": "Claude Code releases (GitHub)", "priority": "P0", "type": "atom", "url": "https://github.com/anthropics/claude-code/releases.atom"},
+  {"name": "Claude Code changelog", "priority": "P0", "type": "html", "url": "https://code.claude.com/docs/en/changelog"},
+  {"name": "Anthropic news", "priority": "P0", "type": "html", "url": "https://www.anthropic.com/news"},
+  {"name": "Anthropic engineering", "priority": "P0", "type": "html", "url": "https://www.anthropic.com/engineering"},
+  {"name": "Cursor changelog", "priority": "P0", "type": "html", "url": "https://cursor.com/changelog"},
+  {"name": "Cursor blog", "priority": "P0", "type": "html", "url": "https://cursor.com/blog"},
+
+  {"name": "GitHub changelog", "priority": "P1", "type": "atom", "url": "https://github.blog/changelog/feed/"},
+  {"name": "OpenAI Codex releases", "priority": "P1", "type": "atom", "url": "https://github.com/openai/codex/releases.atom"},
+  {"name": "Gemini CLI releases", "priority": "P1", "type": "atom", "url": "https://github.com/google-gemini/gemini-cli/releases.atom"},
+  {"name": "MCP specification releases", "priority": "P1", "type": "atom", "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/releases.atom"},
+  {"name": "OpenAI news", "priority": "P1", "type": "atom", "url": "https://openai.com/news/rss.xml"},
+  {"name": "JetBrains AI blog", "priority": "P1", "type": "atom", "url": "https://blog.jetbrains.com/ai/feed/"},
+
+  {"name": "Hacker News: coding agents", "priority": "P2", "type": "hn", "query": "claude code OR cursor OR MCP OR coding agent OR prompt injection"}
+]

@@ -1,0 +1,69 @@
+{
+ "candidates": [
+  {
+   "source": "FIXTURE A",
+   "priority": "P0",
+   "title": "Release X",
+   "url": "https://example.com/a",
+   "snippet": "fixture",
+   "published_hours_ago": 5
+  },
+  {
+   "source": "FIXTURE B",
+   "priority": "P0",
+   "title": "Release Y",
+   "url": "https://example.com/b",
+   "snippet": "fixture",
+   "published_hours_ago": 20
+  },
+  {
+   "source": "FIXTURE C",
+   "priority": "P2",
+   "title": "Advisory Z",
+   "url": "https://example.com/c",
+   "snippet": "fixture",
+   "published_hours_ago": 30
+  }
+ ],
+ "llm_response": {
+  "trend": "Coding agent chuyển dần sang chạy nền và phân quyền chi tiết hơn.",
+  "items": [
+   {
+    "label": "PRODUCT UPDATE",
+    "tags": [
+     "#CodingAgent",
+     "#DevTools"
+    ],
+    "headline": "Công cụ ví dụ A thêm chế độ chạy nền cho coding agent",
+    "description": "Nhà phát triển công cụ ví dụ cho biết phiên bản mới thêm chế độ chạy nền cho coding agent, cho phép giao việc dài hơi và xem kết quả sau.",
+    "noteworthy": "Team có thể tách các tác vụ refactor dài khỏi phiên làm việc chính và giảm thời gian chờ của từng engineer.",
+    "try": "Chạy 10 ticket refactor nhỏ ở chế độ nền và so sánh thời gian hoàn thành.",
+    "caution": "",
+    "url": "https://example.com/a",
+    "is_primary": true,
+    "published_hours_ago": 5
+   },
+   {
+    "label": "SECURITY",
+    "tags": [
+     "#MCP"
+    ],
+    "headline": "Advisory Z cảnh báo lỗ hổng prompt injection qua MCP server",
+    "description": "Nhà phát triển công cụ ví dụ cho biết phiên bản mới thêm chế độ chạy nền cho coding agent, cho phép giao việc dài hơi và xem kết quả sau.",
+    "noteworthy": "Team có thể tách các tác vụ refactor dài khỏi phiên làm việc chính và giảm thời gian chờ của từng engineer.",
+    "try": "Chạy 10 ticket refactor nhỏ ở chế độ nền và so sánh thời gian hoàn thành.",
+    "caution": "",
+    "url": "https://example.com/c",
+    "is_primary": true,
+    "published_hours_ago": 30
+   }
+  ],
+  "dropped": [
+   {
+    "title": "Release Y",
+    "reason": "chỉ là thay đổi UI nhỏ"
+   }
+  ],
+  "conflicts": []
+ }
+}
