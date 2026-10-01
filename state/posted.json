@@ -9,6 +9,16 @@
       "date": "2026-10-01T10:59:38.558514+00:00",
       "headline": "Claude Code phát hành phiên bản v2.1.285 bổ sung tùy chọn quản lý provider và desktop app",
       "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.285"
+    },
+    {
+      "date": "2026-10-01T11:05:37.013130+00:00",
+      "headline": "Claude Code bổ sung tùy chọn cấu hình provider và desktop app",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.285"
+    },
+    {
+      "date": "2026-10-01T11:05:37.013130+00:00",
+      "headline": "GitHub tích hợp nghiên cứu HydraFusion và model GPT-6.1 Sol vào Copilot",
+      "url": "https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot"
     }
   ]
 }
