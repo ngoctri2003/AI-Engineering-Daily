@@ -2,7 +2,7 @@ name: AI Engineering Daily
 
 on:
   schedule:
-    - cron: "0 2 * * 1-5"   # 02:00 UTC = 09:00 giờ VN (GMT+7), thứ 2 đến thứ 6. GitHub có thể trễ vài phút.
+    - cron: "30 1 * * 1-5"   # 01:30 UTC = 08:30 giờ VN (GMT+7), thứ 2 đến thứ 6. GitHub có thể trễ vài phút.
   workflow_dispatch:
     inputs:
       dry_run:
