@@ -13,5 +13,5 @@
   {"name": "OpenAI news", "priority": "P1", "type": "atom", "url": "https://openai.com/news/rss.xml"},
   {"name": "JetBrains AI blog", "priority": "P1", "type": "atom", "url": "https://blog.jetbrains.com/ai/feed/"},
 
-  {"name": "Hacker News: coding agents", "priority": "P2", "type": "hn", "query": "claude code OR cursor OR MCP OR coding agent OR prompt injection"}
+  {"name": "Hacker News: coding agents", "priority": "P2", "type": "hn", "queries": ["claude code", "cursor", "MCP", "coding agent", "prompt injection"]}
 ]

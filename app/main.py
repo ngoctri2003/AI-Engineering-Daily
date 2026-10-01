@@ -7,10 +7,11 @@ import argparse
 import json
 import os
 import sys
+import traceback
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import formatter, llm, slack, sources
+from . import alert, formatter, llm, slack, sources
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
@@ -40,6 +41,10 @@ SCHEMA = """Trả về DUY NHẤT một object JSON:
 }
 Ràng buộc: tối đa 5 items, ưu tiên 3; mỗi item 50-80 từ (description + noteworthy + try + caution);
 chỉ dùng thông tin có trong dữ liệu ứng viên; không đủ tin giá trị thì items = []."""
+
+
+class RunError(Exception):
+    """Lỗi vận hành cần báo cho người phụ trách."""
 
 
 def load_state():
@@ -83,6 +88,8 @@ def run(dry_run=False, mock_file=None):
         srcs = json.loads((HERE / "sources.json").read_text())
         cands, status = sources.collect(srcs, now)
     if not cands:
+        if status and all(v.startswith("LỖI") for v in status.values()):
+            raise RunError("Mọi nguồn tin đều lỗi, không lấy được dữ liệu. Kiểm tra mạng hoặc sources.json.")
         print("Không có ứng viên nào trong 48 giờ. Không đăng.")
         return 0
     cand_urls = {c["url"] for c in cands}
@@ -103,7 +110,7 @@ def run(dry_run=False, mock_file=None):
                 "Sửa item JSON sau cho đạt các lỗi liệt kê, giữ nguyên fact. "
                 f"Lỗi: {errs}\nItem: {json.dumps(it, ensure_ascii=False)}\n"
                 f"Url hợp lệ: {sorted(cand_urls)[:80]}\nTrả về object item JSON duy nhất.")
-            it = fix
+            it = formatter.unwrap_item(fix)
             errs = formatter.validate_item(it, cand_urls, now)
         if errs:
             notes_drop.append(f"Loại: {it.get('headline', '?')} ({'; '.join(errs)})")
@@ -122,8 +129,7 @@ def run(dry_run=False, mock_file=None):
     text = formatter.render_digest(items, result.get("trend", ""), date_str)
     problems = formatter.check_digest(text)
     if problems:
-        print("Bản tin không đạt kiểm tra cuối:", problems)
-        return 1
+        raise RunError(f"Bản tin không đạt kiểm tra cuối: {'; '.join(problems)}")
 
     notes = []
     notes += [f"Loại: {d.get('title')}: {d.get('reason')}" for d in result.get("dropped", [])]
@@ -148,9 +154,18 @@ def run(dry_run=False, mock_file=None):
     return 0
 
 
-if __name__ == "__main__":
+def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--mock", help="file JSON gồm candidates + llm_response, chạy offline")
     a = ap.parse_args()
-    sys.exit(run(a.dry_run, a.mock))
+    try:
+        return run(a.dry_run, a.mock)
+    except Exception as ex:  # ghi lý do (đã che secret) để bước báo lỗi Slack đọc
+        traceback.print_exc()
+        alert.write_reason(f"{type(ex).__name__}: {ex}")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

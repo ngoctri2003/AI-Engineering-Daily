@@ -89,19 +89,21 @@ def fetch_html_source(src):
 
 def fetch_hn(src, cutoff):
     since = int(cutoff.timestamp())
-    q = urllib.parse.quote(src["query"])
-    url = (f"https://hn.algolia.com/api/v1/search_by_date?query={q}&tags=story"
-           f"&numericFilters=created_at_i>{since},points>20&hitsPerPage=15")
-    data = json.loads(http_get(url))
-    out = []
-    for h in data.get("hits", []):
-        if not h.get("url"):
-            continue
-        out.append({
-            "source": src["name"], "priority": src["priority"], "title": h.get("title", ""),
-            "url": h["url"], "published_at": h.get("created_at"),
-            "snippet": f"HN points={h.get('points')}, comments={h.get('num_comments')}. Nguồn thứ cấp, cần là primary source mới đăng.",
-        })
+    queries = src.get("queries") or [src["query"]]
+    out, seen = [], set()
+    for query in queries:
+        q = urllib.parse.quote(query)
+        url = (f"https://hn.algolia.com/api/v1/search_by_date?query={q}&tags=story"
+               f"&numericFilters=created_at_i>{since},points>20&hitsPerPage=10")
+        for h in json.loads(http_get(url)).get("hits", []):
+            if not h.get("url") or h["url"] in seen:
+                continue
+            seen.add(h["url"])
+            out.append({
+                "source": src["name"], "priority": src["priority"], "title": h.get("title", ""),
+                "url": h["url"], "published_at": h.get("created_at"),
+                "snippet": f"HN points={h.get('points')}, comments={h.get('num_comments')}. Nguồn thứ cấp, chỉ dùng nếu link là primary source.",
+            })
     return out
 
 
@@ -118,7 +120,10 @@ def collect(sources, now, window_hours=48, log=print):
                 got = fetch_hn(src, cutoff)
             else:
                 raise ValueError(f"type lạ: {src['type']}")
-            status[src["name"]] = f"ok ({len(got)})"
+            if src["type"] == "html":
+                status[src["name"]] = f"ok ({len(got[0]['snippet'])} ký tự nội dung)"
+            else:
+                status[src["name"]] = f"ok ({len(got)})"
             cands.extend(got)
         except Exception as ex:  # một nguồn lỗi không làm hỏng cả lượt chạy
             status[src["name"]] = f"LỖI: {type(ex).__name__}: {ex}"

@@ -6,6 +6,14 @@ import urllib.error
 import urllib.request
 
 
+def _short_error(raw):
+    try:
+        err = json.loads(raw).get("error", {})
+        return f"{err.get('status', '')} {err.get('message', '')}".strip()[:200]
+    except (ValueError, AttributeError):
+        return repr(raw[:200])
+
+
 def _post(url, headers, body, retries=3):
     data = json.dumps(body).encode()
     for attempt in range(retries):
@@ -17,20 +25,44 @@ def _post(url, headers, body, retries=3):
             if e.code in (429, 500, 502, 503) and attempt < retries - 1:
                 time.sleep(15 * (attempt + 1))
                 continue
-            raise RuntimeError(f"LLM HTTP {e.code}: {e.read()[:300]!r}")
+            raise RuntimeError(f"LLM HTTP {e.code}: {_short_error(e.read())}")
     raise RuntimeError("LLM retry hết lượt")
 
 
+_GEMINI_AUTH = ["header", "bearer", "query"]  # kiểu xác thực thử lần lượt; kiểu đúng được đưa lên đầu
+
+
 def _gemini(system, user, model):
-    key = os.environ["LLM_API_KEY"]
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    key = os.environ["LLM_API_KEY"].strip().strip('"').strip("'")  # bỏ khoảng trắng/xuống dòng/dấu nháy dán thừa
+    base = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     body = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": user}]}],
         "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"},
     }
-    res = _post(url, {"x-goog-api-key": key}, body)
-    return res["candidates"][0]["content"]["parts"][0]["text"]
+    last = None
+    for style in list(_GEMINI_AUTH):
+        url, headers = base, {}
+        if style == "header":
+            headers = {"x-goog-api-key": key}
+        elif style == "bearer":
+            headers = {"Authorization": f"Bearer {key}"}
+        else:
+            url = f"{base}?key={key}"
+        try:
+            res = _post(url, headers, body)
+        except RuntimeError as ex:
+            last = ex
+            if "HTTP 401" in str(ex) or "HTTP 403" in str(ex):
+                print(f"[llm] kiểu xác thực '{style}' bị từ chối, thử kiểu khác")
+                continue
+            raise
+        if style != _GEMINI_AUTH[0]:
+            _GEMINI_AUTH.remove(style)
+            _GEMINI_AUTH.insert(0, style)
+        print(f"[llm] model {model} dùng xác thực '{style}'")
+        return res["candidates"][0]["content"]["parts"][0]["text"]
+    raise last
 
 
 def _openai(system, user, model):

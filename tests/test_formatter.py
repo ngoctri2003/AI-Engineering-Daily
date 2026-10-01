@@ -78,5 +78,56 @@ class T(unittest.TestCase):
             self.assertEqual(f.validate_item(it, urls, NOW), [], it["headline"])
 
 
+
+
+class UnwrapTests(unittest.TestCase):
+    def test_unwrap(self):
+        self.assertEqual(f.unwrap_item({"item": GOOD}), GOOD)
+        self.assertEqual(f.unwrap_item({"items": [GOOD]}), GOOD)
+        self.assertEqual(f.unwrap_item(GOOD), GOOD)
+        self.assertEqual(f.unwrap_item([1, 2]), {})
+
+
+class AlertTests(unittest.TestCase):
+    def test_mask_and_truncate(self):
+        import os
+        from app import alert
+        os.environ["LLM_API_KEY"] = "SECRETKEY12345"
+        r = alert.clean_reason("lỗi với SECRETKEY12345 " + "x" * 500)
+        self.assertNotIn("SECRETKEY12345", r)
+        self.assertLessEqual(len(r), alert.MAX_REASON + 3)
+
+    def test_message(self):
+        from app import alert
+        m = alert.build_message("Mọi nguồn lỗi", "https://github.com/o/r/actions/runs/1")
+        self.assertIn("chưa đăng được", m)
+        self.assertIn("Mọi nguồn lỗi", m)
+        self.assertIn("actions/runs/1", m)
+
+
+
+
+class LlmAuthTests(unittest.TestCase):
+    def test_tries_next_auth_style_on_401(self):
+        import os
+        from unittest import mock
+        from app import llm
+        os.environ["LLM_API_KEY"] = " AQ.testkey12345 \n"
+        calls = []
+
+        def fake_post(url, headers, body, retries=3):
+            calls.append((url, headers))
+            if "x-goog-api-key" in headers:
+                raise RuntimeError("LLM HTTP 401: UNAUTHENTICATED")
+            return {"candidates": [{"content": {"parts": [{"text": "{}"}]}}]}
+
+        with mock.patch.object(llm, "_post", fake_post):
+            llm._GEMINI_AUTH[:] = ["header", "bearer", "query"]
+            out = llm._gemini("s", "u", "m")
+        self.assertEqual(out, "{}")
+        self.assertEqual(calls[1][1], {"Authorization": "Bearer AQ.testkey12345"})
+        self.assertEqual(llm._GEMINI_AUTH[0], "bearer")
+
+
 if __name__ == "__main__":
     unittest.main()

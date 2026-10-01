@@ -15,6 +15,16 @@ EMOJI_RE = re.compile("[\U0001F300-\U0001FAFF☀-➿⭐⬆⏩-⏿️]")
 VENDOR_WORDS = ("cho biết", "công bố", "tuyên bố", "thông báo", "announced", "claims")
 
 
+def unwrap_item(obj):
+    """Phản hồi sửa tin đôi khi bị bọc: {"item": {...}} hoặc {"items": [{...}]}."""
+    if isinstance(obj, dict):
+        if isinstance(obj.get("item"), dict):
+            return obj["item"]
+        if isinstance(obj.get("items"), list) and obj["items"] and isinstance(obj["items"][0], dict):
+            return obj["items"][0]
+    return obj if isinstance(obj, dict) else {}
+
+
 def clean(text):
     """Đổi **bold** kiểu markdown sang *bold* của Slack; bỏ khoảng trắng thừa."""
     text = re.sub(r"\*\*(.+?)\*\*", r"*\1*", text or "")

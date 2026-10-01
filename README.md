@@ -22,6 +22,9 @@ Chi phí: 0 đồng nếu dùng GitHub Actions (repo public không giới hạn 
 
 Không đưa token vào code, README hay commit.
 
+## Báo lỗi vào Slack
+Khi lượt chạy theo lịch (hoặc chạy tay đã bỏ dry run) bị lỗi, bước cuối của workflow chạy `python -m app.alert` và gửi tin vào channel: ngày, lý do (đã che key/token) và link log. Mặc định gửi vào `SLACK_CHANNEL_ID`; muốn gửi chỗ khác, đặt biến `ALERT_CHANNEL_ID`. Ngày không có tin đủ chuẩn thì không đăng và không báo lỗi. Nếu chính Slack lỗi, dựa vào email thông báo của GitHub Actions.
+
 ## Chạy local
 ```
 python -m unittest discover -s tests -v                       # test validator
@@ -30,7 +33,7 @@ LLM_API_KEY=... FORCE=1 python -m app.main --dry-run           # chạy thật n
 ```
 
 ## Đổi LLM
-- `LLM_PROVIDER=gemini` (mặc định, `LLM_MODEL=gemini-3.7-flash`).
+- `LLM_PROVIDER=gemini` (mặc định). Đặt `LLM_MODEL` và `LLM_FALLBACK_MODEL` theo model có trong trang Rate Limit của AI Studio (hiện dùng `gemini-3.8-flash` và `gemini-3.5-flash-lite`). Khi gặp 401/403, code tự thử 3 kiểu gửi key (header `x-goog-api-key`, `Authorization: Bearer`, `?key=`) và nhớ kiểu đúng.
 - `LLM_PROVIDER=openai` với `LLM_BASE_URL` và `LLM_API_KEY`: dùng cho GitHub Models, Groq, OpenRouter hoặc endpoint tương thích OpenAI.
 - Muốn dùng Claude API: thêm một hàm `_anthropic` trong `app/llm.py` (khoảng 15 dòng).
 

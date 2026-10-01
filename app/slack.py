@@ -12,6 +12,24 @@ def _post_json(url, body, headers=None):
         return r.read().decode()
 
 
+def alert(text):
+    """Báo lỗi vận hành. Kênh: ALERT_CHANNEL_ID, nếu trống thì dùng SLACK_CHANNEL_ID."""
+    token = os.environ.get("SLACK_BOT_TOKEN")
+    channel = os.environ.get("ALERT_CHANNEL_ID") or os.environ.get("SLACK_CHANNEL_ID")
+    webhook = os.environ.get("SLACK_WEBHOOK_URL")
+    if token and channel:
+        res = json.loads(_post_json("https://slack.com/api/chat.postMessage", {
+            "channel": channel, "text": text, "mrkdwn": True, "unfurl_links": False},
+            {"Authorization": f"Bearer {token}"}))
+        if not res.get("ok"):
+            raise RuntimeError(f"Slack lỗi: {res.get('error')}")
+        return
+    if webhook:
+        _post_json(webhook, {"text": text, "mrkdwn": True})
+        return
+    raise RuntimeError("Thiếu SLACK_BOT_TOKEN+channel hoặc SLACK_WEBHOOK_URL để báo lỗi")
+
+
 def post(text, notes=None):
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel = os.environ.get("SLACK_CHANNEL_ID")
