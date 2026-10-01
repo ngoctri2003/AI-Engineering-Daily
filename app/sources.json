@@ -15,25 +15,33 @@
     "name": "Anthropic news",
     "priority": "P0",
     "type": "html",
-    "url": "https://www.anthropic.com/news"
+    "url": "https://www.anthropic.com/news",
+    "entry_prefix": "/news/",
+    "max_entries": 4
   },
   {
     "name": "Anthropic engineering",
     "priority": "P0",
     "type": "html",
-    "url": "https://www.anthropic.com/engineering"
+    "url": "https://www.anthropic.com/engineering",
+    "entry_prefix": "/engineering/",
+    "max_entries": 4
   },
   {
     "name": "Cursor changelog",
     "priority": "P0",
     "type": "html",
-    "url": "https://cursor.com/changelog"
+    "url": "https://cursor.com/changelog",
+    "entry_prefix": "/changelog/",
+    "max_entries": 4
   },
   {
     "name": "Cursor blog",
     "priority": "P0",
     "type": "html",
-    "url": "https://cursor.com/blog"
+    "url": "https://cursor.com/blog",
+    "entry_prefix": "/blog/",
+    "max_entries": 4
   },
   {
     "name": "GitHub changelog",

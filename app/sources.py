@@ -11,6 +11,7 @@ from email.utils import parsedate_to_datetime
 UA = {"User-Agent": "ai-eng-daily/1.0 (internal news bot)"}
 SNIPPET_CHARS = 1200
 HTML_CHARS = 5000
+ENTRY_CHARS = 2500
 
 
 def http_get(url, timeout=25):
@@ -76,9 +77,50 @@ def parse_feed(xml_text, src, cutoff):
     return items
 
 
+def extract_entry_links(raw_html, base_url, prefix, limit=4):
+    """Lấy link từng mục (theo thứ tự xuất hiện, không trùng) có đường dẫn bắt đầu bằng prefix."""
+    out = []
+    for m in re.finditer(r'href=["\']([^"\'#?]+)["\']', raw_html):
+        full = urllib.parse.urljoin(base_url, m.group(1))
+        path = urllib.parse.urlparse(full).path
+        if not path.startswith(prefix) or path.rstrip("/") == prefix.rstrip("/"):
+            continue
+        if urllib.parse.urlparse(full).netloc != urllib.parse.urlparse(base_url).netloc:
+            continue
+        full = full.rstrip("/")
+        if full not in out:
+            out.append(full)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _page_title(raw_html):
+    m = re.search(r"(?is)<title[^>]*>(.*?)</title>", raw_html)
+    return strip_html(m.group(1)) if m else ""
+
+
 def fetch_html_source(src):
-    """Trang changelog/blog không có feed: đưa text đầu trang cho LLM, LLM tự đọc ngày."""
-    text = strip_html(http_get(src["url"]))
+    """Trang changelog/blog không có feed. Nếu có entry_prefix thì lấy từng mục (link riêng),
+    không thì đưa text đầu trang cho LLM, LLM tự đọc ngày."""
+    raw = http_get(src["url"])
+    prefix = src.get("entry_prefix")
+    if prefix:
+        entries = []
+        for link in extract_entry_links(raw, src["url"], prefix, src.get("max_entries", 4)):
+            try:
+                page = http_get(link)
+            except Exception:
+                continue
+            entries.append({
+                "source": src["name"], "priority": src["priority"],
+                "title": _page_title(page) or link, "url": link, "published_at": None,
+                "snippet": strip_html(page)[:ENTRY_CHARS],
+                "note": "Ngày nằm trong nội dung; chỉ lấy nếu trong 48 giờ gần nhất.",
+            })
+        if entries:
+            return entries
+    text = strip_html(raw)
     return [{
         "source": src["name"], "priority": src["priority"], "title": src["name"],
         "url": src["url"], "published_at": None,
@@ -154,7 +196,8 @@ def collect(sources, now, window_hours=48, log=print):
             else:
                 raise ValueError(f"type lạ: {src['type']}")
             if src["type"] == "html":
-                status[src["name"]] = f"ok ({len(got[0]['snippet'])} ký tự nội dung)"
+                status[src["name"]] = (f"ok ({len(got)} mục có link riêng)" if len(got) > 1 or got[0]["url"] != src["url"]
+                                       else f"ok ({len(got[0]['snippet'])} ký tự nội dung trang tổng hợp)")
             else:
                 status[src["name"]] = f"ok ({len(got)})"
             cands.extend(got)

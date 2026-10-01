@@ -44,6 +44,7 @@ Ràng buộc: tối đa 5 items, ưu tiên 3; mỗi item 50-80 từ (description
 chỉ dùng thông tin có trong dữ liệu ứng viên; không đủ tin giá trị thì items = [].
 Tin cộng đồng (kind=community, dev.to): tối đa 1 tin mỗi ngày, chỉ chọn khi là cuộc thảo luận nổi bật về nghề/kỹ thuật phần mềm với AI,
 viết rõ đây là quan điểm của tác giả bài viết ("Tác giả bài viết cho rằng..."), is_primary=false, source_kind="community".
+Nếu nội dung nguồn không đủ để người đọc hiểu tin là gì (sản phẩm/tính năng là gì, thay đổi gì) thì LOẠI tin đó vào dropped, không suy đoán.
 Mỗi tin chỉ ứng với MỘT link và MỘT sự kiện; giữ số phiên bản/tên chính xác trong headline (ví dụ v2.1.285)."""
 
 
@@ -121,8 +122,11 @@ def run(dry_run=False, mock_file=None):
     recent_cut = (now - timedelta(days=3)).isoformat()
     recent = [{"headline": p["headline"], "url": p["url"]} for p in state["posted"] if p["date"] >= recent_cut]
 
+    print(f"[run] {len(cands)} ứng viên, {len(recent)} tin đã đăng 3 ngày gần đây")
     result = llm.call_json(system, build_user_prompt(cands, now, recent),
                            mock["llm_response"] if mock else None)
+    print(f"[run] LLM trả {len(result.get('items', [])) if isinstance(result, dict) else 0} tin, "
+          f"{len(result.get('dropped', [])) if isinstance(result, dict) else 0} tin loại")
     items, notes_drop, unusable = [], [], 0
     hub_urls = {x["url"] for x in json.loads((HERE / "sources.json").read_text()) if x["type"] == "html"}
     raw_items = result.get("items", []) if isinstance(result, dict) else []
@@ -141,6 +145,8 @@ def run(dry_run=False, mock_file=None):
                 f"Lỗi: {errs}\nItem: {json.dumps(it, ensure_ascii=False)}\n"
                 f"Url hợp lệ: {sorted(cand_urls)[:80]}\nTrả về object item JSON duy nhất.")
             it = formatter.unwrap_item(fix)
+            if not it.get("headline"):
+                print(f"[llm] phản hồi sửa không dùng được: {json.dumps(fix, ensure_ascii=False)[:400]}")
             errs = formatter.validate_item(it, cand_urls, now, community_urls=community_urls)
         if errs:
             notes_drop.append(f"Loại: {it.get('headline', '?')} ({'; '.join(errs)})")

@@ -147,3 +147,13 @@ class LlmAuthTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EntryLinkTests(unittest.TestCase):
+    def test_extract(self):
+        from app import sources
+        html = ('<a href="/changelog">all</a><a href="/changelog/a-b">A</a>'
+                '<a href="https://cursor.com/changelog/c-d/">C</a><a href="/changelog/a-b#x">dup</a>'
+                '<a href="https://evil.com/changelog/z">Z</a><a href="/blog/q">Q</a>')
+        got = sources.extract_entry_links(html, "https://cursor.com/changelog", "/changelog/")
+        self.assertEqual(got, ["https://cursor.com/changelog/a-b", "https://cursor.com/changelog/c-d"])
