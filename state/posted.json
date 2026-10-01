@@ -1,1 +1,14 @@
-{"posted": []}
+{
+  "posted": [
+    {
+      "date": "2026-10-01T10:59:38.558514+00:00",
+      "headline": "GitHub tích hợp model GPT-6.1 Sol vào Copilot cho tác vụ agentic coding",
+      "url": "https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot"
+    },
+    {
+      "date": "2026-10-01T10:59:38.558514+00:00",
+      "headline": "Claude Code phát hành phiên bản v2.1.285 bổ sung tùy chọn quản lý provider và desktop app",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.285"
+    }
+  ]
+}
