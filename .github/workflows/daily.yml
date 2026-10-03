@@ -2,7 +2,7 @@ name: AI Engineering Daily
 
 on:
   schedule:
-    - cron: "17 1 * * 1-5" # 01:17 UTC = 08:17 giờ VN GMT+7, thứ 2 đến thứ 6. Lệch khỏi phút :00/:30 để tránh giờ cao điểm của GitHub.
+    - cron: "17 1 * * *" # 01:17 UTC = 08:17 giờ VN GMT+7, chạy mọi ngày kể cả thứ 7 và chủ nhật. Lệch khỏi phút :00/:30 để tránh giờ cao điểm của GitHub.
   workflow_dispatch:
     inputs:
       dry_run:
@@ -39,7 +39,6 @@ jobs:
           SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C5RGC88SX' }}
           SLACK_ALLOWED_CHANNELS: ${{ vars.SLACK_ALLOWED_CHANNELS || 'C0C5RGC88SX' }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then export FORCE=1; fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
             python -m app.main --dry-run
           else

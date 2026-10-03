@@ -28,8 +28,8 @@ Khi lượt chạy theo lịch (hoặc chạy tay đã bỏ dry run) bị lỗi,
 ## Chạy local
 ```
 python -m unittest discover -s tests -v                       # test validator
-FORCE=1 python -m app.main --dry-run --mock tests/fixture.json # chạy offline với dữ liệu giả
-LLM_API_KEY=... FORCE=1 python -m app.main --dry-run           # chạy thật nhưng không đăng
+python -m app.main --dry-run --mock tests/fixture.json         # chạy offline với dữ liệu giả
+LLM_API_KEY=... python -m app.main --dry-run                   # chạy thật nhưng không đăng
 ```
 
 ## Đổi LLM

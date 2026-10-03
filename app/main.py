@@ -91,10 +91,6 @@ def make_trend(system, items):
 
 def run(dry_run=False, mock_file=None):
     now = datetime.now(timezone.utc)
-    if now.astimezone(TZ_VN).weekday() >= 5 and not os.environ.get("FORCE"):
-        print("Cuối tuần (giờ VN), bỏ qua. Đặt FORCE=1 để chạy.")
-        return 0
-
     rules = (HERE / "rules.md").read_text()
     system = rules + "\n\nBạn chỉ trả JSON đúng schema. Không thêm lời dẫn."
 
