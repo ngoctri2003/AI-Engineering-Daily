@@ -29,6 +29,11 @@
       "date": "2026-10-02T02:26:47.584004+00:00",
       "headline": "Cursor ra mắt tính năng Rollouts và Security Review cho gói Teams và Enterprise",
       "url": "https://cursor.com/changelog/rollouts-and-security-reviewer"
+    },
+    {
+      "date": "2026-10-04T06:59:39.119636+00:00",
+      "headline": "GitHub Copilot hỗ trợ API cho tính năng code review và thiết lập mức độ nỗ lực mặc định",
+      "url": "https://github.blog/changelog/2026-10-02-copilot-code-review-api-support-and-new-default-effort-level"
     }
   ]
 }
