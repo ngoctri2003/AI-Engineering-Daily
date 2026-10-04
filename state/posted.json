@@ -34,6 +34,11 @@
       "date": "2026-10-04T06:59:39.119636+00:00",
       "headline": "GitHub Copilot hỗ trợ API cho tính năng code review và thiết lập mức độ nỗ lực mặc định",
       "url": "https://github.blog/changelog/2026-10-02-copilot-code-review-api-support-and-new-default-effort-level"
+    },
+    {
+      "date": "2026-10-04T08:15:34.835391+00:00",
+      "headline": "Claude Code phát hành v2.1.289 khắc phục sự cố terminal và quy tắc deny",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.289"
     }
   ]
 }
