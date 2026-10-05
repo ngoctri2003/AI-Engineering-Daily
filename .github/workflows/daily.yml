@@ -34,8 +34,8 @@ jobs:
           LLM_FALLBACK_MODEL: ${{ vars.LLM_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C5RGC88SX' }}
-          SLACK_ALLOWED_CHANNELS: ${{ vars.SLACK_ALLOWED_CHANNELS || 'C0C5RGC88SX' }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C3C2EJATZ' }}
+          SLACK_ALLOWED_CHANNELS: ${{ vars.SLACK_ALLOWED_CHANNELS || 'C0C3C2EJATZ' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
             python -m app.main --dry-run
@@ -53,8 +53,8 @@ jobs:
         if: failure() && (github.event_name == 'schedule' || inputs.dry_run == false)
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C5RGC88SX' }}
-          ALERT_CHANNEL_ID: ${{ vars.ALERT_CHANNEL_ID }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C3C2EJATZ' }}
+          ALERT_CHANNEL_ID: ${{ vars.ALERT_CHANNEL_ID || 'C0C5RGC88SX' }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python -m app.alert
