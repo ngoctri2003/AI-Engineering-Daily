@@ -39,6 +39,16 @@
       "date": "2026-10-04T08:15:34.835391+00:00",
       "headline": "Claude Code phát hành v2.1.289 khắc phục sự cố terminal và quy tắc deny",
       "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.289"
+    },
+    {
+      "date": "2026-10-06T01:30:31.859933+00:00",
+      "headline": "Claude Code phát hành v2.1.290 cải tiến hook cho subagent và cơ chế quản lý xác thực",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.290"
+    },
+    {
+      "date": "2026-10-06T01:30:31.859933+00:00",
+      "headline": "OpenAI Codex phát hành bản 0.160.1 bảo tồn biến môi trường MCP trên Windows",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.160.1"
     }
   ]
 }
