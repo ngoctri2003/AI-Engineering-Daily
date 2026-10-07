@@ -49,6 +49,11 @@
       "date": "2026-10-06T01:30:31.859933+00:00",
       "headline": "OpenAI Codex phát hành bản 0.160.1 bảo tồn biến môi trường MCP trên Windows",
       "url": "https://github.com/openai/codex/releases/tag/rust-v0.160.1"
+    },
+    {
+      "date": "2026-10-07T01:30:18.651334+00:00",
+      "headline": "GitHub Copilot cập nhật khắc phục sự cố hiển thị hoạt động agent",
+      "url": "https://github.blog/changelog/2026-10-06-update-your-ide-to-restore-agent-activity-in-copilot-usage-metrics"
     }
   ]
 }
