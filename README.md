@@ -2,7 +2,7 @@
 
 Bot tự nghiên cứu, kiểm chứng, lọc và đăng bản tin AI + Software Engineering theo bộ rule của chị Quyên (AO-17).
 
-Chi phí: 0 đồng nếu dùng GitHub Actions (repo public không giới hạn phút; repo private có hạn mức free), Gemini free tier và Slack bot token.
+Chi phí: GitHub Actions (repo public không giới hạn phút; repo private có hạn mức free) và Slack bot token không tốn tiền. Phần LLM: Gemini free tier là 0 đồng; Claude API tính tiền theo token và cần nạp credit trên platform.claude.com (credit hết hạn sau 1 năm). Số tiền thực tế xem ở trang Usage của Console sau vài lần chạy.
 
 ## Cách hoạt động
 1. `app/sources.py` đọc feed Atom/RSS và trang changelog trong `app/sources.json`, lọc 48 giờ.
@@ -14,7 +14,7 @@ Chi phí: 0 đồng nếu dùng GitHub Actions (repo public không giới hạn 
 ## Cài đặt (khoảng 20 phút)
 1. Tạo Slack app (api.slack.com/apps, From scratch, workspace dssolutioninc). Tên hiển thị: `AI Engineering Daily`. Scope Bot Token: `chat:write`. Install to Workspace, copy Bot User OAuth Token.
 2. Vào channel test `C0C5RGC88SX`, gõ `/invite @AI Engineering Daily`.
-3. Lấy API key Gemini tại aistudio.google.com (free tier, không cần thẻ).
+3. Lấy API key LLM: Gemini tại aistudio.google.com (free tier, không cần thẻ), hoặc Claude tại platform.claude.com (tạo workspace và API key riêng cho bot, đặt spend limit hằng tháng).
 4. Tạo repo GitHub, push thư mục này lên. Settings > Secrets and variables > Actions:
    - Secrets: `SLACK_BOT_TOKEN`, `LLM_API_KEY`
    - Variables (tùy chọn): `SLACK_CHANNEL_ID`, `SLACK_ALLOWED_CHANNELS`, `LLM_MODEL`, `LLM_FALLBACK_MODEL`, `LLM_PROVIDER`
@@ -35,10 +35,14 @@ LLM_API_KEY=... python -m app.main --dry-run                   # chạy thật n
 ## Đổi LLM
 - `LLM_PROVIDER=gemini` (mặc định). Đặt `LLM_MODEL` và `LLM_FALLBACK_MODEL` theo model có trong trang Rate Limit của AI Studio (hiện dùng `gemini-3.8-flash` và `gemini-3.5-flash-lite`). Khi gặp 401/403, code tự thử 3 kiểu gửi key (header `x-goog-api-key`, `Authorization: Bearer`, `?key=`) và nhớ kiểu đúng.
 - `LLM_PROVIDER=openai` với `LLM_BASE_URL` và `LLM_API_KEY`: dùng cho GitHub Models, Groq, OpenRouter hoặc endpoint tương thích OpenAI.
-- Muốn dùng Claude API: thêm một hàm `_anthropic` trong `app/llm.py` (khoảng 15 dòng).
+- `LLM_PROVIDER=anthropic`: gọi Claude Messages API (`https://api.anthropic.com/v1/messages`). Mặc định `LLM_MODEL=claude-sonnet-5-5`, `LLM_FALLBACK_MODEL=claude-haiku-5-5` (đặt biến để đổi; để trống thì dùng mặc định theo provider). `LLM_API_KEY` là API key tạo trên Console.
+  - Code không gửi `temperature`/`top_p`/`top_k` (giá trị khác mặc định bị API trả HTTP 400) và không gửi `thinking`, nên model dùng thinking mặc định; token thinking tính tiền như token đầu ra.
+  - Tùy chọn `LLM_EFFORT` (`low`, `medium`, `high`, `xhigh`, `max`) điều chỉnh độ sâu suy luận và chi phí; để trống thì dùng mặc định của model. Mức hợp lệ tùy model, sai mức thì API trả HTTP 400.
+  - Chuyển từ Gemini sang Claude: đổi secret `LLM_API_KEY` thành key Claude, rồi đặt biến `LLM_PROVIDER=anthropic` (và bỏ `LLM_MODEL`, `LLM_FALLBACK_MODEL` cũ của Gemini nếu đang đặt). Quay lại Gemini: đặt `LLM_PROVIDER=gemini` và đổi lại secret.
 
 ## Việc cần kiểm tra ở lần chạy thật đầu tiên
 - URL trong `sources.json` chưa được thử trực tiếp (môi trường dựng bot không truy cập được các site này). Log mỗi lần chạy in trạng thái từng nguồn; sửa/bỏ nguồn lỗi.
-- Tên model Gemini và hạn mức free tier thay đổi theo thời gian, kiểm tra trên aistudio.google.com.
+- Tên model Gemini và hạn mức free tier thay đổi theo thời gian, kiểm tra trên aistudio.google.com. Tên model Claude kiểm tra ở trang Models của Console.
+- Với Claude: chạy dry-run vài lần, xem trang Usage trên Console để biết chi phí thực tế và kiểm tra log có dòng `[llm] model claude-... failed` hay không.
 - `app/rules.md` là bản chép từ comment AO-17 (bị cắt ở mục 12). Bản gốc trong thread của chị Quyên là chuẩn.
 - Cách tính 50-80 từ: phần mô tả + Đáng chú ý + Nên thử + Lưu ý (không tính headline). Hỏi chị Quyên nếu muốn khác.

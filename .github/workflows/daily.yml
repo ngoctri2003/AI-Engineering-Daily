@@ -30,8 +30,9 @@ jobs:
         timeout-minutes: 10
         env:
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
-          LLM_MODEL: ${{ vars.LLM_MODEL || 'gemini-3.7-flash' }}
-          LLM_FALLBACK_MODEL: ${{ vars.LLM_FALLBACK_MODEL || 'gemini-3.5-flash-lite' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_FALLBACK_MODEL: ${{ vars.LLM_FALLBACK_MODEL }}
+          LLM_EFFORT: ${{ vars.LLM_EFFORT }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C3C2EJATZ' }}
