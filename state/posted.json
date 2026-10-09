@@ -74,6 +74,16 @@
       "date": "2026-10-08T16:02:24.976701+00:00",
       "headline": "GitHub đưa stacked pull requests ra chính thức, tách thay đổi lớn thành nhiều PR review độc lập",
       "url": "https://github.blog/changelog/2026-10-06-stacked-pull-requests-generally-available"
+    },
+    {
+      "date": "2026-10-09T01:30:20.665890+00:00",
+      "headline": "Claude Code v2.1.295 thêm onFailure: \"block\" cho command và HTTP hook, chặn action khi hook lỗi thay vì cho qua",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.295"
+    },
+    {
+      "date": "2026-10-09T01:30:20.665890+00:00",
+      "headline": "GitHub công bố model chuyên dụng phát hiện secret bị lộ, áp dụng cho cả code do người viết lẫn code làm cùng AI agent",
+      "url": "https://github.blog/changelog/2026-10-07-purpose-built-model-for-leaked-secret-detection"
     }
   ]
 }
