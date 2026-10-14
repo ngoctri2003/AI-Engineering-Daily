@@ -94,6 +94,21 @@
       "date": "2026-10-12T01:30:33.801394+00:00",
       "headline": "Dev.to: Cách trích xuất phần 'why' từ PR vào CHANGELOG bằng AI",
       "url": "https://dev.to/nyaomaru/how-do-we-extract-the-why-from-a-pr-into-a-changelog-with-jev-52pk"
+    },
+    {
+      "date": "2026-10-14T01:30:21.632778+00:00",
+      "headline": "Anthropic chuyển monorepo sang Scion, VCS nội bộ, khi số merge mỗi ngày tăng hơn 10 lần",
+      "url": "https://www.anthropic.com/engineering/redesigning-source-control"
+    },
+    {
+      "date": "2026-10-14T01:30:21.632778+00:00",
+      "headline": "GitHub secret scanning chặn push Anthropic key mặc định, bổ sung thêm Salesforce và Cloudsmith",
+      "url": "https://github.blog/changelog/2026-10-13-secret-scanning-blocks-anthropic-keys-by-default-adds-salesforce"
+    },
+    {
+      "date": "2026-10-14T01:30:21.632778+00:00",
+      "headline": "GitHub Copilot thêm Gemini 4 Argon của Google làm model GA cho coding và agentic task",
+      "url": "https://github.blog/changelog/2026-10-13-gemini-4-argon-in-github-copilot"
     }
   ]
 }
