@@ -109,6 +109,16 @@
       "date": "2026-10-14T01:30:21.632778+00:00",
       "headline": "GitHub Copilot thêm Gemini 4 Argon của Google làm model GA cho coding và agentic task",
       "url": "https://github.blog/changelog/2026-10-13-gemini-4-argon-in-github-copilot"
+    },
+    {
+      "date": "2026-10-15T01:30:17.497338+00:00",
+      "headline": "Claude Code v2.1.300 xuất OpenTelemetry GenAI attributes và tách cache write theo lifetime 5 phút, 1 giờ",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.300"
+    },
+    {
+      "date": "2026-10-15T01:30:17.497338+00:00",
+      "headline": "GitHub Copilot cho admin bắt client tải managed settings mới khi khởi động, thay vì dùng policy cache",
+      "url": "https://github.blog/changelog/2026-10-13-enterprise-managed-settings-enforcement-updates"
     }
   ]
 }
