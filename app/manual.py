@@ -44,6 +44,10 @@ def handle(title, body, post_at=None, post=slack.post, schedule=slack.schedule, 
             return 200, "Sent"
         schedule(text, when)
         return 200, "Scheduled"
+    except RuntimeError as ex:
+        # Raised by app.slack with a Slack error code or a config problem; contains no secrets.
+        print(f"[manual] send failed: {ex}")
+        return 502, f"Failed to send to Slack: {ex}"
     except Exception as ex:
         print(f"[manual] send failed: {type(ex).__name__}: {ex}")
         return 502, "Failed to send to Slack, check the function logs"

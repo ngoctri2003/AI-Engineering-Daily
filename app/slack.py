@@ -37,13 +37,13 @@ def post(text, notes=None):
     allow = [c for c in os.environ.get("SLACK_ALLOWED_CHANNELS", "").split(",") if c]
     if token and channel:
         if allow and channel not in allow:
-            raise RuntimeError(f"Channel {channel} không nằm trong allow-list")
+            raise RuntimeError(f"Channel {channel} is not in the allow-list")
         auth = {"Authorization": f"Bearer {token}"}
         res = json.loads(_post_json("https://slack.com/api/chat.postMessage", {
             "channel": channel, "text": text, "mrkdwn": True,
             "unfurl_links": False, "unfurl_media": False}, auth))
         if not res.get("ok"):
-            raise RuntimeError(f"Slack lỗi: {res.get('error')}")
+            raise RuntimeError(f"Slack error: {res.get('error')}")
         if notes:
             _post_json("https://slack.com/api/chat.postMessage", {
                 "channel": channel, "thread_ts": res["ts"], "text": notes, "mrkdwn": True,
@@ -54,7 +54,7 @@ def post(text, notes=None):
         if notes:
             _post_json(webhook, {"text": notes, "mrkdwn": True})
         return
-    raise RuntimeError("Thiếu SLACK_BOT_TOKEN+SLACK_CHANNEL_ID hoặc SLACK_WEBHOOK_URL")
+    raise RuntimeError("Missing SLACK_BOT_TOKEN+SLACK_CHANNEL_ID or SLACK_WEBHOOK_URL")
 
 
 def schedule(text, post_at):
