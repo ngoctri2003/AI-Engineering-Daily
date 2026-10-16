@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Manual Slack Post</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --fg:#1d1c1d; --muted:#616061; --line:#d0d0d4; --accent:#007a5a; --err:#c01343; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1a1d21; --card:#222529; --fg:#e8e8e8; --muted:#a0a0a5; --line:#3a3d42; --accent:#2bac76; --err:#ff6b8a; }
+  }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:24px 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.hint { color:var(--muted); margin:0 0 16px; font-size:14px; }
+  label { display:block; font-weight:600; margin:12px 0 4px; }
+  input, textarea { width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); font:inherit; }
+  textarea { min-height:220px; resize:vertical; }
+  .row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:12px; }
+  .count { color:var(--muted); font-size:14px; }
+  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 20px; font:inherit; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  #status { margin-top:12px; min-height:1.5em; font-size:14px; }
+  #status.err { color:var(--err); }
+  #status.ok { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>Manual Slack Post</h1>
+    <p class="hint">The message is posted to the bot's channel as typed. Slack formatting works: *bold*, _italic_, `code`, &lt;https://url|label&gt;.</p>
+    <form id="f">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <label for="text">Message</label>
+      <textarea id="text" maxlength="3500" required></textarea>
+      <div class="row">
+        <span class="count" id="count">0 / 3500</span>
+        <button id="btn" type="submit">Send to Slack</button>
+      </div>
+      <div id="status" role="status"></div>
+    </form>
+  </div>
+</main>
+<script>
+  const f = document.getElementById("f"), text = document.getElementById("text");
+  const pw = document.getElementById("pw"), btn = document.getElementById("btn");
+  const status = document.getElementById("status"), count = document.getElementById("count");
+  try { pw.value = sessionStorage.getItem("pw") || ""; } catch (e) {}
+  text.addEventListener("input", () => { count.textContent = text.value.length + " / 3500"; });
+  function show(msg, cls) { status.textContent = msg; status.className = cls || ""; }
+  f.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!confirm("Send this message to the Slack channel now?")) return;
+    btn.disabled = true; show("Sending...");
+    try {
+      const r = await fetch("/api/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw.value, text: text.value })
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) {
+        show("Sent.", "ok"); text.value = ""; count.textContent = "0 / 3500";
+        try { sessionStorage.setItem("pw", pw.value); } catch (e) {}
+      } else show(d.message || ("Error " + r.status), "err");
+    } catch (err) { show("Network error", "err"); }
+    btn.disabled = false;
+  });
+</script>
+</body>
+</html>

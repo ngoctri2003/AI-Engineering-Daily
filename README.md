@@ -46,3 +46,10 @@ LLM_API_KEY=... python -m app.main --dry-run                   # chạy thật n
 - Với Claude: chạy dry-run vài lần, xem trang Usage trên Console để biết chi phí thực tế và kiểm tra log có dòng `[llm] model claude-... failed` hay không.
 - `app/rules.md` là bản chép từ comment AO-17 (bị cắt ở mục 12). Bản gốc trong thread của chị Quyên là chuẩn.
 - Cách tính 50-80 từ: phần mô tả + Đáng chú ý + Nên thử + Lưu ý (không tính headline). Hỏi chị Quyên nếu muốn khác.
+
+## Manual send (web form)
+A small Vercel project sends a hand-written message through the same Slack bot, next to the daily run. Files: `public/index.html` (form), `api/send.py` (endpoint), `app/manual.py` (checks, reuses `slack.post`).
+1. Import this repo into Vercel (no build command, no framework).
+2. Set environment variables in Vercel: `SLACK_BOT_TOKEN`, `SLACK_CHANNEL_ID`, `SLACK_ALLOWED_CHANNELS` (same values as the Actions workflow) and `MANUAL_SEND_PASSWORD` (a long random string; share it only with senders).
+3. Open the deployed URL, enter the password and the message, press Send. A confirm dialog appears first. Messages go to `SLACK_CHANNEL_ID` and are not written to `state/posted.json`.
+Limits: 3500 characters, plain Slack mrkdwn, no rate limit beyond Vercel's defaults. Consider Vercel Deployment Protection for an extra layer.
