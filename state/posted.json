@@ -119,6 +119,21 @@
       "date": "2026-10-15T01:30:17.497338+00:00",
       "headline": "GitHub Copilot cho admin bắt client tải managed settings mới khi khởi động, thay vì dùng policy cache",
       "url": "https://github.blog/changelog/2026-10-13-enterprise-managed-settings-enforcement-updates"
+    },
+    {
+      "date": "2026-10-16T01:30:25.639379+00:00",
+      "headline": "Claude Code v2.1.301 thêm giới hạn chờ cho retry mode không giám sát và tách quyết định của auto mode classifier trong OTel",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.301"
+    },
+    {
+      "date": "2026-10-16T01:30:25.639379+00:00",
+      "headline": "OpenAI Codex 0.163.0 cho phép steer agent bằng follow-up khi đang phản hồi và chạy song song các tool chỉ đọc",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.163.0"
+    },
+    {
+      "date": "2026-10-16T01:30:25.639379+00:00",
+      "headline": "GitHub đưa AI Scan cho pull request vào GA, tìm lỗ hổng trong thay đổi PR ở các ngôn ngữ và framework CodeQL chưa hỗ trợ",
+      "url": "https://github.blog/changelog/2026-10-15-ai-scan-for-pull-requests-generally-available"
     }
   ]
 }
