@@ -6,75 +6,298 @@
 <meta name="robots" content="noindex">
 <title>Manual Slack Post</title>
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --fg:#1d1c1d; --muted:#616061; --line:#d0d0d4; --accent:#007a5a; --err:#c01343; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#1a1d21; --card:#222529; --fg:#e8e8e8; --muted:#a0a0a5; --line:#3a3d42; --accent:#2bac76; --err:#ff6b8a; }
+  :root {
+    --bg:#f4f5f8; --card:#ffffff; --fg:#1b1d22; --muted:#6a6f7a; --line:#dfe2e8; --soft:#eef0f4;
+    --accent:#4f46e5; --accent-fg:#ffffff; --accent-soft:#e8e7fd; --ok:#0f7b57; --err:#c4204f;
+    --slack-bg:#ffffff; --slack-fg:#1d1c1d; --code-bg:#f2f2f2; --code-fg:#c01343; --link:#1264a3;
+    --shadow:0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
   }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
-  main { max-width:640px; margin:0 auto; padding:24px 16px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
-  h1 { font-size:20px; margin:0 0 4px; }
-  p.hint { color:var(--muted); margin:0 0 16px; font-size:14px; }
-  label { display:block; font-weight:600; margin:12px 0 4px; }
-  input, textarea { width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); font:inherit; }
-  textarea { min-height:220px; resize:vertical; }
-  .row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:12px; }
-  .count { color:var(--muted); font-size:14px; }
-  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 20px; font:inherit; font-weight:600; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-  #status { margin-top:12px; min-height:1.5em; font-size:14px; }
-  #status.err { color:var(--err); }
-  #status.ok { color:var(--accent); }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#121317; --card:#1b1d23; --fg:#ececf0; --muted:#9a9faa; --line:#2e313a; --soft:#252831;
+      --accent:#7c75ff; --accent-fg:#101014; --accent-soft:#2b2a52; --ok:#3ecf9b; --err:#ff7b9c;
+      --slack-bg:#1a1d21; --slack-fg:#d1d2d3; --code-bg:#2b2e33; --code-fg:#e8912d; --link:#1d9bd1;
+      --shadow:none;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width:1040px; margin:0 auto; padding:32px 16px 48px; }
+  header { margin-bottom:20px; }
+  h1 { font-size:24px; margin:0 0 4px; letter-spacing:-.01em; }
+  header p { margin:0; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:20px; align-items:start; }
+  @media (max-width:820px) { .grid { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow); }
+  .card h2 { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 14px; }
+  .field { margin-bottom:16px; }
+  .field-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  label, .lbl { font-weight:600; font-size:14px; }
+  .count { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .count.warn { color:var(--err); }
+  input[type=text], input[type=datetime-local], textarea {
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
+    background:var(--bg); color:var(--fg); font:inherit; transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  textarea { min-height:200px; resize:vertical; border-top-left-radius:0; border-top-right-radius:0; }
+  .toolbar { display:flex; gap:4px; padding:6px; border:1px solid var(--line); border-bottom:0; border-radius:10px 10px 0 0; background:var(--soft); }
+  .tool { background:transparent; color:var(--fg); border:0; border-radius:6px; min-width:34px; height:30px; padding:0 8px; font:inherit; font-weight:700; cursor:pointer; }
+  .tool:hover { background:var(--card); }
+  .seg { display:inline-flex; background:var(--soft); border-radius:10px; padding:3px; gap:2px; }
+  .seg button { border:0; background:transparent; color:var(--muted); font:inherit; font-weight:600; padding:7px 16px; border-radius:8px; cursor:pointer; }
+  .seg button[aria-pressed=true] { background:var(--card); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.12); }
+  #sched { margin-top:12px; display:none; }
+  #sched.on { display:block; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:999px; padding:5px 12px; font:inherit; font-size:13px; cursor:pointer; }
+  .chip:hover { border-color:var(--accent); color:var(--accent); }
+  .summary { margin-top:10px; font-size:13px; color:var(--muted); }
+  .primary { width:100%; margin-top:4px; background:var(--accent); color:var(--accent-fg); border:0; border-radius:10px; padding:13px 20px; font:inherit; font-weight:700; font-size:15px; cursor:pointer; }
+  .primary:hover:not(:disabled) { filter:brightness(1.08); }
+  .primary:disabled { opacity:.45; cursor:not-allowed; }
+  .kbd { text-align:center; margin-top:8px; font-size:12px; color:var(--muted); }
+  /* Slack-style preview */
+  .slack { background:var(--slack-bg); color:var(--slack-fg); border:1px solid var(--line); border-radius:10px; padding:14px; font:15px/1.46 "Lato", system-ui, sans-serif; min-height:120px; }
+  .slack .who { display:flex; gap:10px; align-items:flex-start; }
+  .avatar { width:36px; height:36px; border-radius:8px; background:var(--accent); color:var(--accent-fg); display:grid; place-items:center; font-weight:800; flex:none; }
+  .slack .name { font-weight:800; }
+  .slack .name small { font-weight:400; color:var(--muted); margin-left:6px; font-size:12px; }
+  .slack .msg { white-space:pre-wrap; word-break:break-word; margin-top:2px; }
+  .slack code { background:var(--code-bg); color:var(--code-fg); border:1px solid var(--line); border-radius:4px; padding:0 4px; font:13px ui-monospace, Consolas, monospace; }
+  .slack a { color:var(--link); text-decoration:none; }
+  .empty { color:var(--muted); font-style:italic; }
+  .tips { margin:14px 0 0; padding:0; list-style:none; color:var(--muted); font-size:13px; }
+  .tips li { margin:3px 0; }
+  .tips code { background:var(--soft); padding:0 4px; border-radius:4px; }
+  /* modal + toast */
+  dialog { border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--fg); padding:22px; max-width:420px; width:calc(100% - 32px); box-shadow:0 20px 60px rgba(0,0,0,.35); }
+  dialog::backdrop { background:rgba(10,12,16,.55); }
+  dialog h3 { margin:0 0 6px; font-size:18px; }
+  dialog p { margin:0 0 6px; color:var(--muted); }
+  dialog .when { color:var(--fg); font-weight:600; }
+  .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+  .btn { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:10px; padding:9px 18px; font:inherit; font-weight:600; cursor:pointer; }
+  .btn.go { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+  #toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); opacity:0; pointer-events:none; background:var(--fg); color:var(--bg); padding:11px 18px; border-radius:10px; font-weight:600; transition:all .25s; max-width:calc(100% - 32px); }
+  #toast.show { opacity:1; transform:translate(-50%,0); }
+  #toast.err { background:var(--err); color:#fff; }
 </style>
 </head>
 <body>
-<main>
-  <div class="card">
+<div class="wrap">
+  <header>
     <h1>Manual Slack Post</h1>
-    <p class="hint">The title is posted in bold, followed by the message. Slack formatting works: *bold*, _italic_, `code`, &lt;https://url|label&gt;.</p>
-    <form id="f">
-      <label for="title">Title</label>
-      <input id="title" maxlength="150" required>
-      <label for="text">Message</label>
-      <textarea id="text" maxlength="3500" required></textarea>
-      <label for="when">Schedule (optional, your local time)</label>
-      <input id="when" type="datetime-local">
-      <p class="hint" style="margin:4px 0 0">Leave empty to send now. Must be 1 minute to 120 days ahead.</p>
-      <div class="row">
-        <span class="count" id="count">0 / 3500</span>
-        <button id="btn" type="submit">Send / Schedule</button>
+    <p>Write a message, check the preview, then send it now or schedule it.</p>
+  </header>
+
+  <form id="f" class="grid" novalidate>
+    <section class="card">
+      <h2>Compose</h2>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="title">Title</label>
+          <span class="count" id="tcount">0 / 150</span>
+        </div>
+        <input id="title" type="text" maxlength="150" placeholder="e.g. Maintenance tonight at 22:00" autocomplete="off">
       </div>
-      <div id="status" role="status"></div>
-    </form>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="text">Message</label>
+          <span class="count" id="count">0 / 3500</span>
+        </div>
+        <div class="toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" class="tool" data-wrap="*" title="Bold">B</button>
+          <button type="button" class="tool" data-wrap="_" title="Italic"><i>I</i></button>
+          <button type="button" class="tool" data-wrap="`" title="Code">&lt;/&gt;</button>
+          <button type="button" class="tool" id="linkBtn" title="Link">Link</button>
+        </div>
+        <textarea id="text" maxlength="3500" placeholder="Write your message here..."></textarea>
+      </div>
+
+      <div class="field">
+        <div class="lbl" style="margin-bottom:8px">When to send</div>
+        <div class="seg" role="group" aria-label="When to send">
+          <button type="button" id="modeNow" aria-pressed="true">Send now</button>
+          <button type="button" id="modeLater" aria-pressed="false">Schedule</button>
+        </div>
+        <div id="sched">
+          <input id="when" type="datetime-local" aria-label="Schedule time">
+          <div class="chips">
+            <button type="button" class="chip" data-preset="hour">In 1 hour</button>
+            <button type="button" class="chip" data-preset="tomorrow">Tomorrow 09:00</button>
+            <button type="button" class="chip" data-preset="monday">Next Monday 09:00</button>
+          </div>
+          <div class="summary" id="summary"></div>
+        </div>
+      </div>
+
+      <button class="primary" id="btn" type="submit" disabled>Send now</button>
+      <div class="kbd">Ctrl + Enter to send</div>
+    </section>
+
+    <aside class="card">
+      <h2>Preview</h2>
+      <div class="slack">
+        <div class="who">
+          <div class="avatar">AI</div>
+          <div style="min-width:0;flex:1">
+            <div class="name">AI Engineering Daily<small id="stamp"></small></div>
+            <div class="msg" id="preview"></div>
+          </div>
+        </div>
+      </div>
+      <ul class="tips">
+        <li><code>*bold*</code> <code>_italic_</code> <code>`code`</code> <code>&lt;https://url|label&gt;</code></li>
+        <li>The title is posted in bold above the message.</li>
+        <li>Scheduled messages can be set 1 minute to 120 days ahead.</li>
+      </ul>
+    </aside>
+  </form>
+</div>
+
+<dialog id="dlg">
+  <h3 id="dlgTitle">Send this message?</h3>
+  <p id="dlgBody"></p>
+  <div class="actions">
+    <button type="button" class="btn" id="dlgCancel">Cancel</button>
+    <button type="button" class="btn go" id="dlgOk">Confirm</button>
   </div>
-</main>
+</dialog>
+<div id="toast" role="status"></div>
+
 <script>
-  const f = document.getElementById("f"), text = document.getElementById("text");
-  const title = document.getElementById("title"), when = document.getElementById("when");
-  const btn = document.getElementById("btn");
-  const status = document.getElementById("status"), count = document.getElementById("count");
-  text.addEventListener("input", () => { count.textContent = text.value.length + " / 3500"; });
-  function show(msg, cls) { status.textContent = msg; status.className = cls || ""; }
-  f.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const postAt = when.value ? Math.floor(new Date(when.value).getTime() / 1000) : null;
-    const q = postAt ? "Schedule this message for " + new Date(when.value).toLocaleString() + "?"
-                     : "Send this message to the Slack channel now?";
-    if (!confirm(q)) return;
-    btn.disabled = true; show(postAt ? "Scheduling..." : "Sending...");
+  const $ = (id) => document.getElementById(id);
+  const title = $("title"), text = $("text"), when = $("when"), btn = $("btn");
+  const preview = $("preview"), summary = $("summary"), dlg = $("dlg"), toast = $("toast");
+  let later = false, busy = false;
+
+  const fmt = (d) => d.toLocaleString([], { weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
+  const pad = (n) => String(n).padStart(2, "0");
+  const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // Escape first, then apply the Slack mrkdwn subset on the escaped text.
+  function mrkdwn(s) {
+    return esc(s)
+      .replace(/&lt;(https?:\/\/[^|&]+?)\|([^&]+?)&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>')
+      .replace(/&lt;(https?:\/\/[^&]+?)&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+      .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, "$1<b>$2</b>")
+      .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g, "$1<i>$2</i>");
+  }
+
+  function scheduledAt() {
+    if (!later || !when.value) return null;
+    const d = new Date(when.value);
+    return isNaN(d) ? null : d;
+  }
+  function scheduleError() {
+    const d = scheduledAt();
+    if (!later) return "";
+    if (!d) return "Pick a date and time";
+    const lead = d.getTime() - Date.now();
+    if (lead < 60000) return "Time must be at least 1 minute from now";
+    if (lead > 120 * 86400000) return "Time must be within 120 days";
+    return "";
+  }
+
+  function refresh() {
+    $("tcount").textContent = title.value.length + " / 150";
+    $("count").textContent = text.value.length + " / 3500";
+    $("count").classList.toggle("warn", text.value.length > 3300);
+    const t = title.value.trim(), b = text.value.trim();
+    preview.innerHTML = (t || b)
+      ? (t ? "<b>" + esc(t) + "</b>" + (b ? "\n\n" : "") : "") + mrkdwn(b)
+      : '<span class="empty">Your message will appear here</span>';
+    const d = scheduledAt(), err = scheduleError();
+    $("stamp").textContent = later && d ? "scheduled " + fmt(d) : "now";
+    summary.textContent = later ? (err || "Will be sent on " + fmt(d)) : "";
+    summary.style.color = later && err && when.value ? "var(--err)" : "";
+    btn.textContent = later ? "Schedule message" : "Send now";
+    btn.disabled = busy || !t || !b || !!err;
+  }
+
+  function setMode(isLater) {
+    later = isLater;
+    $("modeNow").setAttribute("aria-pressed", String(!later));
+    $("modeLater").setAttribute("aria-pressed", String(later));
+    $("sched").classList.toggle("on", later);
+    if (later && !when.value) applyPreset("hour");
+    refresh();
+  }
+
+  function applyPreset(p) {
+    const d = new Date();
+    if (p === "hour") { d.setHours(d.getHours() + 1); }
+    else if (p === "tomorrow") { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); }
+    else { d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); d.setHours(9, 0, 0, 0); }
+    when.value = toLocalInput(d);
+    refresh();
+  }
+
+  function wrapSel(ch) {
+    const s = text.selectionStart, e = text.selectionEnd, v = text.value;
+    text.value = v.slice(0, s) + ch + v.slice(s, e) + ch + v.slice(e);
+    text.focus(); text.setSelectionRange(s + 1, e + 1); refresh();
+  }
+  function insertLink() {
+    const url = prompt("Link URL (https://...)");
+    if (!url || !/^https:\/\//i.test(url)) return;
+    const s = text.selectionStart, e = text.selectionEnd, v = text.value;
+    const label = v.slice(s, e) || "link";
+    text.value = v.slice(0, s) + "<" + url + "|" + label + ">" + v.slice(e);
+    text.focus(); refresh();
+  }
+
+  function showToast(msg, isErr) {
+    toast.textContent = msg; toast.className = "show" + (isErr ? " err" : "");
+    clearTimeout(showToast.t); showToast.t = setTimeout(() => { toast.className = ""; }, 4000);
+  }
+
+  async function send() {
+    const d = scheduledAt();
+    busy = true; refresh(); btn.textContent = later ? "Scheduling..." : "Sending...";
     try {
       const r = await fetch("/api/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.value, text: text.value, post_at: postAt })
+        body: JSON.stringify({ title: title.value, text: text.value, post_at: d ? Math.floor(d.getTime() / 1000) : null })
       });
-      const d = await r.json().catch(() => ({}));
+      const res = await r.json().catch(() => ({}));
       if (r.ok) {
-        show(d.message + ".", "ok"); title.value = ""; text.value = ""; when.value = "";
-        count.textContent = "0 / 3500";
-      } else show(d.message || ("Error " + r.status), "err");
-    } catch (err) { show("Network error", "err"); }
-    btn.disabled = false;
+        showToast(later ? "Scheduled for " + fmt(d) : "Message sent to Slack");
+        title.value = ""; text.value = ""; when.value = ""; setMode(false);
+      } else showToast(res.message || "Error " + r.status, true);
+    } catch (err) { showToast("Network error, nothing was sent", true); }
+    busy = false; refresh();
+  }
+
+  function askConfirm() {
+    if (btn.disabled) return;
+    const d = scheduledAt();
+    $("dlgTitle").textContent = later ? "Schedule this message?" : "Send this message now?";
+    $("dlgBody").innerHTML = later
+      ? 'It will be posted to the Slack channel on <span class="when">' + esc(fmt(d)) + "</span>."
+      : "It will be posted to the Slack channel right away.";
+    $("dlgOk").textContent = later ? "Schedule" : "Send";
+    dlg.showModal();
+  }
+
+  $("f").addEventListener("submit", (e) => { e.preventDefault(); askConfirm(); });
+  $("dlgCancel").addEventListener("click", () => dlg.close());
+  $("dlgOk").addEventListener("click", () => { dlg.close(); send(); });
+  $("modeNow").addEventListener("click", () => setMode(false));
+  $("modeLater").addEventListener("click", () => setMode(true));
+  $("linkBtn").addEventListener("click", insertLink);
+  document.querySelectorAll("[data-wrap]").forEach((b) => b.addEventListener("click", () => wrapSel(b.dataset.wrap)));
+  document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
+  [title, text, when].forEach((el) => el.addEventListener("input", refresh));
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !dlg.open) { e.preventDefault(); askConfirm(); }
   });
+  refresh();
 </script>
 </body>
 </html>
