@@ -41,5 +41,30 @@ class ManualSendTest(unittest.TestCase):
         self.assertEqual(manual.handle("T", "b", post=boom)[0], 502)
 
 
+class ActivityTest(unittest.TestCase):
+    def test_sorted_and_independent_failures(self):
+        def bad():
+            raise RuntimeError("Slack error: missing_scope")
+        res = manual.activity(lambda: [{"id": "Q2", "post_at": 20, "text": "b"}, {"id": "Q1", "post_at": 10, "text": "a"}], bad)
+        self.assertEqual([m["id"] for m in res["scheduled"]], ["Q1", "Q2"])
+        self.assertEqual(res["sent"], [])
+        self.assertIn("missing_scope", res["warnings"][0])
+        self.assertIn("channels:history", res["warnings"][0])
+
+    def test_unexpected_error_hides_details(self):
+        def boom():
+            raise ValueError("secret-ish detail")
+        res = manual.activity(boom, lambda: [])
+        self.assertNotIn("secret-ish", res["warnings"][0])
+
+    def test_cancel(self):
+        calls = []
+        self.assertEqual(manual.cancel("Q123ABC456", calls.append), (200, "Cancelled"))
+        self.assertEqual(calls, ["Q123ABC456"])
+        for bad in ("", None, "x", "Q1; drop", "../a"):
+            self.assertEqual(manual.cancel(bad, calls.append)[0], 400)
+        self.assertEqual(len(calls), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

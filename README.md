@@ -54,3 +54,5 @@ A small Vercel project sends a hand-written message (title + message) through th
 3. Open the deployed URL, fill Title and Message, optionally pick a schedule time, press Send / Schedule. Scheduling uses Slack `chat.scheduleMessage` (1 minute to 120 days ahead), so no extra cron is needed.
 
 There is no password: anyone who can open the URL can post to the channel. Turn on Vercel Deployment Protection (Vercel Authentication) for the project so only your team can open it. Manual messages are not written to `state/posted.json`. Limits: title 150, message 3500 characters.
+
+The Activity section lists scheduled messages (`chat.scheduledMessages.list`, with a Cancel button) and recent messages posted by the bot (`conversations.history`, tagged Daily or Manual). Reading sent history needs the extra bot scope `channels:history` (public channel) or `groups:history` (private channel); reinstall the Slack app after adding it. Without it the Scheduled list still works and the page shows a warning. Slack is the only source of truth, so nothing is stored on Vercel.

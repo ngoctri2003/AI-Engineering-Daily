@@ -1,4 +1,5 @@
 """Manual send: validate a request from the web form and post or schedule it through the Slack bot."""
+import re
 import time
 
 from . import slack
@@ -51,3 +52,35 @@ def handle(title, body, post_at=None, post=slack.post, schedule=slack.schedule, 
     except Exception as ex:
         print(f"[manual] send failed: {type(ex).__name__}: {ex}")
         return 502, "Failed to send to Slack, check the function logs"
+
+
+def activity(list_scheduled=slack.list_scheduled, list_sent=slack.list_sent):
+    """Return {"scheduled": [...], "sent": [...], "warnings": [...]}. Each list fails independently."""
+    out = {"scheduled": [], "sent": [], "warnings": []}
+    try:
+        out["scheduled"] = sorted(list_scheduled(), key=lambda m: m["post_at"])
+    except Exception as ex:
+        out["warnings"].append(f"Scheduled list unavailable: {_reason(ex)}")
+    try:
+        out["sent"] = list_sent()
+    except Exception as ex:
+        out["warnings"].append(f"Sent history unavailable: {_reason(ex)}"
+                               + (" (add the channels:history / groups:history scope and reinstall the app)"
+                                  if "missing_scope" in _reason(ex) else ""))
+    return out
+
+
+def cancel(scheduled_id, cancel_fn=slack.cancel_scheduled):
+    if not re.fullmatch(r"Q[A-Z0-9]{5,30}", str(scheduled_id or "")):
+        return 400, "Invalid scheduled message id"
+    try:
+        cancel_fn(scheduled_id)
+    except Exception as ex:
+        print(f"[manual] cancel failed: {type(ex).__name__}: {ex}")
+        return 502, f"Failed to cancel: {_reason(ex)}"
+    return 200, "Cancelled"
+
+
+def _reason(ex):
+    # RuntimeError comes from app.slack and carries a Slack error code or config problem, never a secret.
+    return str(ex) if isinstance(ex, RuntimeError) else "request failed, check the function logs"
