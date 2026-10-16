@@ -48,8 +48,9 @@ LLM_API_KEY=... python -m app.main --dry-run                   # chạy thật n
 - Cách tính 50-80 từ: phần mô tả + Đáng chú ý + Nên thử + Lưu ý (không tính headline). Hỏi chị Quyên nếu muốn khác.
 
 ## Manual send (web form)
-A small Vercel project sends a hand-written message through the same Slack bot, next to the daily run. Files: `public/index.html` (form), `api/send.py` (endpoint), `app/manual.py` (checks, reuses `slack.post`).
-1. Import this repo into Vercel (no build command, no framework).
-2. Set environment variables in Vercel: `SLACK_BOT_TOKEN`, `SLACK_CHANNEL_ID`, `SLACK_ALLOWED_CHANNELS` (same values as the Actions workflow) and `MANUAL_SEND_PASSWORD` (a long random string; share it only with senders).
-3. Open the deployed URL, enter the password and the message, press Send. A confirm dialog appears first. Messages go to `SLACK_CHANNEL_ID` and are not written to `state/posted.json`.
-Limits: 3500 characters, plain Slack mrkdwn, no rate limit beyond Vercel's defaults. Consider Vercel Deployment Protection for an extra layer.
+A small Vercel project sends a hand-written message (title + message) through the same Slack bot, next to the daily run. Files: `public/index.html` (form), `api/send.py` (endpoint), `app/manual.py` (checks), `slack.post` / `slack.schedule` (Slack calls).
+1. Import this repo into Vercel (preset "Other", no build command).
+2. Set environment variables in Vercel: `SLACK_BOT_TOKEN`, `SLACK_CHANNEL_ID`, `SLACK_ALLOWED_CHANNELS` (same values as the Actions workflow).
+3. Open the deployed URL, fill Title and Message, optionally pick a schedule time, press Send / Schedule. Scheduling uses Slack `chat.scheduleMessage` (1 minute to 120 days ahead), so no extra cron is needed.
+
+There is no password: anyone who can open the URL can post to the channel. Turn on Vercel Deployment Protection (Vercel Authentication) for the project so only your team can open it. Manual messages are not written to `state/posted.json`. Limits: title 150, message 3500 characters.

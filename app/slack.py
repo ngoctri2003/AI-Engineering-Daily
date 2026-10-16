@@ -55,3 +55,19 @@ def post(text, notes=None):
             _post_json(webhook, {"text": notes, "mrkdwn": True})
         return
     raise RuntimeError("Thiếu SLACK_BOT_TOKEN+SLACK_CHANNEL_ID hoặc SLACK_WEBHOOK_URL")
+
+
+def schedule(text, post_at):
+    """Schedule a message with chat.scheduleMessage (bot token only). post_at is a unix timestamp."""
+    token = os.environ.get("SLACK_BOT_TOKEN")
+    channel = os.environ.get("SLACK_CHANNEL_ID")
+    allow = [c for c in os.environ.get("SLACK_ALLOWED_CHANNELS", "").split(",") if c]
+    if not (token and channel):
+        raise RuntimeError("Scheduling needs SLACK_BOT_TOKEN and SLACK_CHANNEL_ID")
+    if allow and channel not in allow:
+        raise RuntimeError(f"Channel {channel} is not in the allow-list")
+    res = json.loads(_post_json("https://slack.com/api/chat.scheduleMessage", {
+        "channel": channel, "text": text, "post_at": int(post_at), "mrkdwn": True,
+        "unfurl_links": False, "unfurl_media": False}, {"Authorization": f"Bearer {token}"}))
+    if not res.get("ok"):
+        raise RuntimeError(f"Slack error: {res.get('error')}")

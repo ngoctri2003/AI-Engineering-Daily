@@ -31,15 +31,18 @@
 <main>
   <div class="card">
     <h1>Manual Slack Post</h1>
-    <p class="hint">The message is posted to the bot's channel as typed. Slack formatting works: *bold*, _italic_, `code`, &lt;https://url|label&gt;.</p>
+    <p class="hint">The title is posted in bold, followed by the message. Slack formatting works: *bold*, _italic_, `code`, &lt;https://url|label&gt;.</p>
     <form id="f">
-      <label for="pw">Password</label>
-      <input id="pw" type="password" autocomplete="current-password" required>
+      <label for="title">Title</label>
+      <input id="title" maxlength="150" required>
       <label for="text">Message</label>
       <textarea id="text" maxlength="3500" required></textarea>
+      <label for="when">Schedule (optional, your local time)</label>
+      <input id="when" type="datetime-local">
+      <p class="hint" style="margin:4px 0 0">Leave empty to send now. Must be 1 minute to 120 days ahead.</p>
       <div class="row">
         <span class="count" id="count">0 / 3500</span>
-        <button id="btn" type="submit">Send to Slack</button>
+        <button id="btn" type="submit">Send / Schedule</button>
       </div>
       <div id="status" role="status"></div>
     </form>
@@ -47,24 +50,27 @@
 </main>
 <script>
   const f = document.getElementById("f"), text = document.getElementById("text");
-  const pw = document.getElementById("pw"), btn = document.getElementById("btn");
+  const title = document.getElementById("title"), when = document.getElementById("when");
+  const btn = document.getElementById("btn");
   const status = document.getElementById("status"), count = document.getElementById("count");
-  try { pw.value = sessionStorage.getItem("pw") || ""; } catch (e) {}
   text.addEventListener("input", () => { count.textContent = text.value.length + " / 3500"; });
   function show(msg, cls) { status.textContent = msg; status.className = cls || ""; }
   f.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!confirm("Send this message to the Slack channel now?")) return;
-    btn.disabled = true; show("Sending...");
+    const postAt = when.value ? Math.floor(new Date(when.value).getTime() / 1000) : null;
+    const q = postAt ? "Schedule this message for " + new Date(when.value).toLocaleString() + "?"
+                     : "Send this message to the Slack channel now?";
+    if (!confirm(q)) return;
+    btn.disabled = true; show(postAt ? "Scheduling..." : "Sending...");
     try {
       const r = await fetch("/api/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw.value, text: text.value })
+        body: JSON.stringify({ title: title.value, text: text.value, post_at: postAt })
       });
       const d = await r.json().catch(() => ({}));
       if (r.ok) {
-        show("Sent.", "ok"); text.value = ""; count.textContent = "0 / 3500";
-        try { sessionStorage.setItem("pw", pw.value); } catch (e) {}
+        show(d.message + ".", "ok"); title.value = ""; text.value = ""; when.value = "";
+        count.textContent = "0 / 3500";
       } else show(d.message || ("Error " + r.status), "err");
     } catch (err) { show("Network error", "err"); }
     btn.disabled = false;
