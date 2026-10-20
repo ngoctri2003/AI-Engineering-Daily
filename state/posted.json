@@ -134,6 +134,21 @@
       "date": "2026-10-16T01:30:25.639379+00:00",
       "headline": "GitHub đưa AI Scan cho pull request vào GA, tìm lỗ hổng trong thay đổi PR ở các ngôn ngữ và framework CodeQL chưa hỗ trợ",
       "url": "https://github.blog/changelog/2026-10-15-ai-scan-for-pull-requests-generally-available"
+    },
+    {
+      "date": "2026-10-20T01:30:23.579330+00:00",
+      "headline": "Claude Code v2.1.304 thêm /auto-mode-setup cho Bedrock, Vertex và Foundry, kèm lệnh kiểm tra cấu hình Managed Agents",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.304"
+    },
+    {
+      "date": "2026-10-20T01:30:23.579330+00:00",
+      "headline": "OpenAI cải thiện coding cho ngôn ngữ ít tài nguyên, bổ sung evaluation cho SQLite và COBOL migration",
+      "url": "https://openai.com/index/low-resource-programming-languages"
+    },
+    {
+      "date": "2026-10-20T01:30:23.579330+00:00",
+      "headline": "GitHub Copilot mở REST API GET và PATCH để quản lý model policy cho enterprise, team và organization",
+      "url": "https://github.blog/changelog/2026-10-19-copilot-model-policy-api-for-enterprise-orgs-and-teams"
     }
   ]
 }
