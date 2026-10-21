@@ -149,6 +149,21 @@
       "date": "2026-10-20T01:30:23.579330+00:00",
       "headline": "GitHub Copilot mở REST API GET và PATCH để quản lý model policy cho enterprise, team và organization",
       "url": "https://github.blog/changelog/2026-10-19-copilot-model-policy-api-for-enterprise-orgs-and-teams"
+    },
+    {
+      "date": "2026-10-21T01:30:22.551257+00:00",
+      "headline": "Claude Code v2.1.305 thêm sandbox.allowNestedUserNamespaces, cho lệnh trong sandbox Linux tạo user namespace",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.305"
+    },
+    {
+      "date": "2026-10-21T01:30:22.551257+00:00",
+      "headline": "GitHub mở public preview cho package firewall, nhắm vào malware khai thác lúc cài package",
+      "url": "https://github.blog/changelog/2026-10-20-github-package-firewall-in-public-preview"
+    },
+    {
+      "date": "2026-10-21T01:30:22.551257+00:00",
+      "headline": "Gemini CLI v0.65.0 khóa workspace settings ở thư mục untrusted, chỉ đọc",
+      "url": "https://github.com/google-gemini/gemini-cli/releases/tag/v0.65.0"
     }
   ]
 }
