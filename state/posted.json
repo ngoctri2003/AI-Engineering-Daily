@@ -189,6 +189,21 @@
       "date": "2026-10-22T10:26:36.546284+00:00",
       "headline": "OpenAI đưa frontier model và Codex workflow lên Google Cloud qua Model Garden và Google Cloud Marketplace",
       "url": "https://openai.com/index/openai-models-google-cloud"
+    },
+    {
+      "date": "2026-10-22T15:29:43.854287+00:00",
+      "headline": "Claude Code v2.1.306 sửa lỗi Not logged in trong cloud session và lỗi prompt is too long trong session nhiều MCP tool",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.306"
+    },
+    {
+      "date": "2026-10-22T15:29:43.854287+00:00",
+      "headline": "OpenAI giới thiệu Patch the Planet, điều phối phản hồi toàn cầu cho lỗ hổng nghiêm trọng mà agent tìm ra trong open source",
+      "url": "https://openai.com/index/coordinated-disclosure-of-critical-vulnerabilities"
+    },
+    {
+      "date": "2026-10-22T15:29:43.854287+00:00",
+      "headline": "Bài dev.to: idempotency key cho AI agent nên lấy từ intent ổn định thay vì hash argument do model sinh ra",
+      "url": "https://dev.to/anis_meziani_52aab42304a8/idempotency-keys-for-ai-agents-why-hashing-the-arguments-doesnt-work-cap"
     }
   ]
 }
