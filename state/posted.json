@@ -164,6 +164,21 @@
       "date": "2026-10-21T01:30:22.551257+00:00",
       "headline": "Gemini CLI v0.65.0 khóa workspace settings ở thư mục untrusted, chỉ đọc",
       "url": "https://github.com/google-gemini/gemini-cli/releases/tag/v0.65.0"
+    },
+    {
+      "date": "2026-10-22T01:30:21.070665+00:00",
+      "headline": "Claude Code v2.1.307 thêm event safety_event cho từng tool call bị chặn và giới hạn retry MCP tool call",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.307"
+    },
+    {
+      "date": "2026-10-22T01:30:21.070665+00:00",
+      "headline": "Cloudflare dùng OpenAI Daybreak tìm lỗ hổng và đề xuất bản vá để review, developer dùng Codex",
+      "url": "https://openai.com/index/cloudflare-cyber"
+    },
+    {
+      "date": "2026-10-22T01:30:21.070665+00:00",
+      "headline": "GitHub CLI mở public preview cho OAuth token có thời hạn, tự refresh khi opt in",
+      "url": "https://github.blog/changelog/2026-10-21-github-cli-opt-in-to-expiring-auto-refreshing-oauth-tokens"
     }
   ]
 }
