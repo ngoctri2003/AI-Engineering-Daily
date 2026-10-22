@@ -1,0 +1,46 @@
+[
+  {
+    "name": "CISA KEV (cisagov/kev-data)",
+    "type": "kev",
+    "url": "https://raw.githubusercontent.com/cisagov/kev-data/main/known_exploited_vulnerabilities.json"
+  },
+  {
+    "name": "GitHub Advisory Database: npm",
+    "type": "ghsa",
+    "ecosystem": "npm"
+  },
+  {
+    "name": "Advisories: vercel/next.js",
+    "type": "repo-advisories",
+    "repo": "vercel/next.js",
+    "product": "Next.js"
+  },
+  {
+    "name": "Advisories: expressjs/express",
+    "type": "repo-advisories",
+    "repo": "expressjs/express",
+    "product": "Express"
+  },
+  {
+    "name": "Advisories: php/php-src",
+    "type": "repo-advisories",
+    "repo": "php/php-src",
+    "product": "PHP"
+  },
+  {
+    "name": "Node.js security releases",
+    "type": "feed",
+    "url": "https://nodejs.org/en/feed/vulnerability.xml",
+    "product": "Node.js",
+    "qualify": "always",
+    "stale_after_days": 60
+  },
+  {
+    "name": "Chrome Releases",
+    "type": "feed",
+    "url": "https://chromereleases.googleblog.com/feeds/posts/default",
+    "product": "Chrome",
+    "pattern": "CVE-\\d{4}-\\d{4,7}",
+    "stale_after_days": 14
+  }
+]

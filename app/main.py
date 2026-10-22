@@ -198,8 +198,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--mock", help="file JSON gồm candidates + llm_response, chạy offline")
+    ap.add_argument("--profile", default="ai-daily", choices=["ai-daily", "websec"],
+                    help="bulletin profile; the default keeps the original AI Engineering Daily behavior")
     a = ap.parse_args()
     try:
+        if a.profile == "websec":
+            from . import websec
+            return websec.run(a.dry_run, a.mock)
         return run(a.dry_run, a.mock)
     except Exception as ex:  # ghi lý do (đã che secret) để bước báo lỗi Slack đọc
         traceback.print_exc()

@@ -1,0 +1,18 @@
+{
+  "_note": "Starter list derived from the technologies seen in Slack on 2026-10-22. The team must review it before the bulletin goes live. Each entry matches by alias (vendor/product text) or by ecosystem plus package name.",
+  "products": [
+    {"name": "Chrome", "category": "BROWSER", "tag": "#Chrome", "aliases": ["chrome", "chromium"]},
+    {"name": "Firefox", "category": "BROWSER", "tag": "#Firefox", "aliases": ["firefox"]},
+    {"name": "Safari", "category": "BROWSER", "tag": "#Safari", "aliases": ["safari", "webkit"]},
+    {"name": "Edge", "category": "BROWSER", "tag": "#Edge", "aliases": ["microsoft edge"]},
+    {"name": "Node.js", "category": "RUNTIME", "tag": "#NodeJS", "aliases": ["node.js", "nodejs"]},
+    {"name": "PHP", "category": "RUNTIME", "tag": "#PHP", "aliases": ["php"]},
+    {"name": "WordPress", "category": "FRAMEWORK", "tag": "#WordPress", "aliases": ["wordpress"]},
+    {"name": "Next.js", "category": "FRAMEWORK", "tag": "#JavaScript", "aliases": ["next.js"], "ecosystem": "npm", "packages": ["next"]},
+    {"name": "React", "category": "FRAMEWORK", "tag": "#JavaScript", "ecosystem": "npm", "packages": ["react", "react-dom"]},
+    {"name": "Express", "category": "FRAMEWORK", "tag": "#NodeJS", "ecosystem": "npm", "packages": ["express"]},
+    {"name": "Bryntum Gantt", "category": "FRAMEWORK", "tag": "#JavaScript", "ecosystem": "npm", "packages": ["@bryntum/gantt"]},
+    {"name": "Atlassian Data Center", "category": "ATLASSIAN", "tag": "#Atlassian", "aliases": ["atlassian"]},
+    {"name": "AWS", "category": "CLOUD", "tag": "#AWS", "aliases": ["amazon web services", "aws lambda", "aws ecs"]}
+  ]
+}

@@ -1,2 +1,5 @@
 error_reason.txt
 __pycache__/
+
+.vercel
+.env*
