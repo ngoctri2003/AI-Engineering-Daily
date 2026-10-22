@@ -21,10 +21,11 @@ CVSS_THRESHOLD = 8.0
 CRITICAL_SCORE = 9.0
 MAX_DETAILED = 3
 MAX_OTHERS = 8
-WORDS_MIN, WORDS_MAX = 40, 70
+WORDS_MIN, WORDS_MAX = 40, 90
+MAX_REPAIRS = 2
 MAX_STATE = 500
 MARKUP_RE = re.compile(r"https?:|www\.|[<>&|`]|@(?:channel|here|everyone)", re.I)
-META_RE = re.compile(r"dữ liệu (?:không|chưa)|không (?:nêu|đề cập|có thông tin|rõ)|the data (?:does not|doesn't)", re.I)
+META_RE = re.compile(r"dữ liệu (?:không|chưa)|không (?:nêu|đề cập|có thông tin)|chưa (?:ghi nhận|thấy|có dấu hiệu|có báo cáo)|the data (?:does not|doesn't)", re.I)
 VERSION_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)+(?!\w)(?!\.\d)")
 
 
@@ -48,10 +49,10 @@ Rules:
 - impact: one sentence on who is affected and what could happen (versions, conditions) from the batch data. Do not start it with the word "Ảnh hưởng".
 - action: one concrete step, for example the fixed version to update to. If no fixed version is listed, say to update to the latest
   release from the vendor. Never write that the data is missing something.
-- description + impact + action together: 40-70 words. No emoji. No em dash.
+- description + impact + action together: 50-80 words. No emoji. No em dash.
 - Use only information present in the batch data. Never invent CVE IDs, version numbers, scores or links.
 - If the data is too thin for a full explanation, still return the item and say plainly what the data does not state;
-  keep to the 40-70 word range."""
+  keep to the 50-80 word range."""
 
 
 def load_json(path):
@@ -153,26 +154,55 @@ def _join_unique(values, sep=", "):
 VULN_TYPES = load_json(PROFILE_DIR / "profile.json").get("vuln_types", [])
 
 
+NEGATION_RE = re.compile(r"\b(?:no|not|cannot|can't|without|never|non|isn't|aren't|doesn't|does not)\b[^.]{0,40}$", re.I)
+
+
 def detect_types(text, types, limit=2):
-    """Plain-language vulnerability types found in the English source text (code-owned, never LLM-written)."""
+    """Plain-language vulnerability types found in the English source text (code-owned, never LLM-written).
+    A match right after a negation ("does not lead to remote code execution") does not count."""
     found = []
     for t in types:
-        if re.search(t["pattern"], text, re.I) and t not in found:
-            found.append(t)
+        for m in re.finditer(t["pattern"], text, re.I):
+            if not NEGATION_RE.search(text[max(0, m.start() - 60):m.start()]):
+                if t not in found:
+                    found.append(t)
+                break
     return found[:limit]
 
 
+def _score(c):
+    """Comparable severity: CVSS when known, otherwise a stand-in for the vendor severity label."""
+    if c["cvss"] is not None:
+        return c["cvss"]
+    return {"critical": 9.5, "high": 8.0}.get(c["severity"], 0)
+
+
 def group_batches(kept):
-    """One batch per product inside the window, so one CVE can never appear in two batches."""
-    groups = {}
+    """Batches: release-like sources (Chrome, Node.js, Firefox, KEV) become one batch per product; advisory-like
+    sources (GitHub advisories) stay separate unless they share a CVE ID, so a critical advisory is never
+    hidden behind a milder one of the same product."""
+    groups, key_of = {}, {}
     for c, watch in kept:
         name = watch["name"] if watch else f"{c['vendor']} {c['product']}".strip() or c["source"]
-        g = groups.setdefault(name, {"watch": watch, "items": []})
+        if c.get("grain") == "advisory":
+            ids = (c["cve_ids"] or [c["id"]]) + [c["url"]]  # one advisory page can list several CVEs
+            found = {key_of[(name, i)] for i in ids if (name, i) in key_of}
+            key = min(found) if found else (name, "adv", ids[0])
+            for other in found - {key}:  # merge groups that turned out to be the same advisory
+                groups[key]["items"] += groups.pop(other)["items"]
+                key_of = {k: (key if v == other else v) for k, v in key_of.items()}
+            for i in ids:
+                key_of[(name, i)] = key
+        else:
+            key = (name, "product")
+        g = groups.setdefault(key, {"name": name, "watch": watch, "items": []})
         g["items"].append(c)
+    ordered = sorted(groups.values(), key=lambda g: (g["name"], min(i["id"] for i in g["items"])))
+    groups = {(g["name"], n): g for n, g in enumerate(ordered)}
     batches = []
-    for n, (name, g) in enumerate(sorted(groups.items()), start=1):
+    for n, ((name, _), g) in enumerate(groups.items(), start=1):
         items = g["items"]
-        best = max(items, key=lambda x: x["cvss"] or 0)
+        best = max(items, key=_score)
         cve_ids, ids = [], []
         for i in items:
             cve_ids += [x for x in i["cve_ids"] if x not in cve_ids]
@@ -182,7 +212,7 @@ def group_batches(kept):
             "batch_id": f"B{n}", "product": name, "count": len(items), "title": best["title"], "ids": ids,
             "url": best["url"], "published_at": max(i["published_at"] or "" for i in items), "cve_ids": cve_ids,
             "cvss": max(scores) if scores else None,
-            "severity": next((i["severity"] for i in items if i["severity"]), None),
+            "severity": best["severity"] or next((i["severity"] for i in items if i["severity"]), None),
             "in_kev": any(i["in_kev"] for i in items), "exploited": any(i["exploited"] for i in items),
             "fixed_in": _join_unique(i["fixed_in"] for i in items),
             "affected": _join_unique((i["affected"] for i in items), sep="; "),
@@ -277,14 +307,18 @@ def one_liner(batch, strings):
 
 
 def severity_line(batch, strings):
-    """Code-owned severity facts, so the LLM never has to describe them (or what is missing)."""
+    """Code-owned severity facts, so the LLM never has to describe them (or what is missing).
+    The CVSS score decides the label; the vendor's severity word is used only when there is no score."""
     score, sev = batch.get("cvss"), batch.get("severity")
-    label = strings["critical"] if (score or 0) >= CRITICAL_SCORE or sev == "critical" else (
-        strings["high"] if (score or 0) >= CVSS_THRESHOLD or sev == "high" else "")
-    parts = [label + (f" (CVSS {score:g})" if score is not None else "") if label else (f"CVSS {score:g}" if score is not None else "")]
+    if score is not None:
+        label = strings["critical"] if score >= CRITICAL_SCORE else (strings["high"] if score >= 7.0 else "")
+        parts = [f"{label} (CVSS {score:g})" if label else f"CVSS {score:g}"]
+    else:
+        parts = [strings["critical"] if sev == "critical" else (strings["high"] if sev == "high" else "")]
     if batch.get("exploited"):
         parts.append(strings["exploited"])
-    return f"{strings['severity']}: " + ", ".join(p for p in parts if p) if any(parts) else ""
+    parts = [p for p in parts if p]
+    return f"{strings['severity']}: " + ", ".join(parts) if parts else ""
 
 
 def _strip_label(text, label):
@@ -345,7 +379,7 @@ def check_digest(text, pairs, others):
 def repair_prompt(item, batch, errs):
     keys = ("batch_id", "product", "cve_ids", "cvss", "exploited", "in_kev", "title", "summary", "fixed_in", "affected")
     return ("Fix the item below so it passes the listed errors. Keep the facts, use only the batch data, "
-            f"stay within 40-70 words for description + impact + action.\nErrors: {errs}\n"
+            f"stay within 40-90 words for description + impact + action.\nErrors: {errs}\n"
             f"Item: {json.dumps(item, ensure_ascii=False)}\n"
             f"Batch data: {json.dumps({k: batch[k] for k in keys}, ensure_ascii=False)}\n"
             "Return the corrected item as one JSON object with the same batch_id.")
@@ -366,8 +400,11 @@ def summarize(detailed, now, system, mock_response=None, log=print):
             continue
         seen.add(batch["batch_id"])
         errs = validate_summary(item, batch)
-        if errs:
-            log(f"[validate] {batch['product']} ({batch['batch_id']}) failed: {'; '.join(errs)}; asking for one repair")
+        for attempt in range(1, MAX_REPAIRS + 1):
+            if not errs:
+                break
+            log(f"[validate] {batch['product']} ({batch['batch_id']}) failed: {'; '.join(errs)}; "
+                f"repair request {attempt} of {MAX_REPAIRS}")
             try:
                 fixed = formatter.unwrap_item(llm.call_json(system, repair_prompt(item, batch, errs), mock_response))
                 fixed["batch_id"] = batch["batch_id"]
@@ -375,6 +412,7 @@ def summarize(detailed, now, system, mock_response=None, log=print):
                 item = fixed
             except Exception as ex:
                 log(f"[llm] repair request failed: {type(ex).__name__}: {ex}")
+                break
         if errs:
             log(f"[validate] {batch['product']} ({batch['batch_id']}) degraded to one line: {'; '.join(errs)}")
             failed.append(batch)
@@ -452,7 +490,7 @@ def run(dry_run=False, mock_file=None, now=None):
         raise RunError(f"Final digest check failed: {'; '.join(problems)}")
     print(text)
     for name, info in prep["status"].items():
-        if info.startswith(("ERROR", "STALE")):
+        if info.startswith(("ERROR", "STALE", "WARN")):
             print(f"[source-note] {name}: {info}")
     if dry_run:
         print("\n[dry-run] Not posted to Slack, state not written.")

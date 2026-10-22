@@ -164,21 +164,6 @@
       "date": "2026-10-21T01:30:22.551257+00:00",
       "headline": "Gemini CLI v0.65.0 khóa workspace settings ở thư mục untrusted, chỉ đọc",
       "url": "https://github.com/google-gemini/gemini-cli/releases/tag/v0.65.0"
-    },
-    {
-      "date": "2026-10-22T16:26:46.579409+00:00",
-      "headline": "Claude Code v2.1.307 thêm event claude_code.safety_event cho mỗi tool call bị chặn, và chỉ retry HTTP MCP tool an toàn",
-      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.307"
-    },
-    {
-      "date": "2026-10-22T16:26:46.579409+00:00",
-      "headline": "JetBrains đưa Air Governance vào GA, cho phép quản lý AI agent, model, provider và chi phí theo tổ chức",
-      "url": "https://blog.jetbrains.com/blog/2026/10/22/air-governance-manage-ai-agents-access-and-spend-throughout-your-organization/"
-    },
-    {
-      "date": "2026-10-22T16:26:46.579409+00:00",
-      "headline": "GitHub CLI cho phép opt in OAuth token có hạn và tự làm mới, đang ở public preview",
-      "url": "https://github.blog/changelog/2026-10-21-github-cli-opt-in-to-expiring-auto-refreshing-oauth-tokens"
     }
   ]
 }

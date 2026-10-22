@@ -218,7 +218,7 @@ def run(dry_run=False, mock_file=None, with_security=False, security_mock=None):
         print("\n--- Ghi chú (chỉ trong log) ---\n" + "\n".join(f"- {n}" for n in notes))
     if sec:
         for name, info in sec["status"].items():
-            if info.startswith(("ERROR", "STALE")):
+            if info.startswith(("ERROR", "STALE", "WARN")):
                 print(f"[source-note] {name}: {info}")
     if dry_run:
         print("\n[dry-run] Không đăng Slack, không ghi state.")

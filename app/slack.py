@@ -31,7 +31,34 @@ def alert(text):
     raise RuntimeError("Thiếu SLACK_BOT_TOKEN+channel hoặc SLACK_WEBHOOK_URL để báo lỗi")
 
 
+SLACK_SEP = "\n\n" + "\u2501" * 20 + "\n\n"
+MAX_MESSAGE = 3800  # Slack splits longer messages on its own, in the middle of a block
+
+
+def split_message(text, limit=MAX_MESSAGE):
+    """Split at block separators so no block is cut; a single over-long block is left whole."""
+    if len(text) <= limit:
+        return [text]
+    parts, current = [], ""
+    for block in text.split(SLACK_SEP):
+        candidate = block if not current else current + SLACK_SEP + block
+        if current and len(candidate) > limit:
+            parts.append(current)
+            current = block
+        else:
+            current = candidate
+    parts.append(current)
+    return parts
+
+
 def post(text, notes=None):
+    chunks = split_message(text)
+    for chunk in chunks[:-1]:
+        _post_one(chunk)
+    return _post_one(chunks[-1], notes)
+
+
+def _post_one(text, notes=None):
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel = os.environ.get("SLACK_CHANNEL_ID")
     webhook = os.environ.get("SLACK_WEBHOOK_URL")

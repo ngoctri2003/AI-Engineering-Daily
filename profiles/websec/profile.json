@@ -25,7 +25,7 @@
       "risk": "kẻ tấn công có thể chạy lệnh hoặc mã trên hệ thống bị ảnh hưởng"
     },
     {
-      "pattern": "use[- ]after[- ]free|buffer overflow|out[- ]of[- ]bounds write|memory corruption|type confusion|out[- ]of[- ]memory|\\bOOM\\b|heap corruption|double free",
+      "pattern": "use[- ]after[- ]free|buffer overflow|out[- ]of[- ]bounds write|memory corruption|type confusion|out[- ]of[- ]memory|\\bOOM\\b|heap corruption|double free|boundary conditions|uninitialized memory|memory safety|heap-based|stack-based|integer overflow|out[- ]of[- ]bounds",
       "label": "hỏng bộ nhớ",
       "risk": "dữ liệu hoặc trang web độc hại có thể làm chương trình sập hoặc chạy mã của kẻ tấn công"
     },
@@ -65,7 +65,7 @@
       "risk": "có thể làm sai lệch hoặc đầu độc dữ liệu qua proxy và cache"
     },
     {
-      "pattern": "information disclosure|out[- ]of[- ]bounds read|info(?:rmation)? leak|sensitive information",
+      "pattern": "information disclosure|info(?:rmation)? leak|sensitive information",
       "label": "lộ thông tin",
       "risk": "có thể đọc được dữ liệu không được phép"
     },
@@ -73,6 +73,11 @@
       "pattern": "denial of service|\\bDoS\\b|resource exhaustion|infinite loop|uncontrolled resource",
       "label": "từ chối dịch vụ",
       "risk": "có thể làm dịch vụ chậm hoặc ngừng hoạt động"
+    },
+    {
+      "pattern": "certificate|cryptographic issue",
+      "label": "chứng chỉ hoặc mật mã",
+      "risk": "kết nối có thể bị giả mạo hoặc nghe lén nếu chứng chỉ bị lợi dụng"
     }
   ]
 }

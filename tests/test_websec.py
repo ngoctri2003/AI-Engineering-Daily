@@ -647,3 +647,79 @@ class PlainLanguageTests(unittest.TestCase):
                "severity_lines": True, "fixed_in_pattern": "updated to ([0-9]+(?:\\.[0-9]+)+)"}
         out, _ = ss.fetch_feed(src, CUTOFF, get_text=lambda url: feed)
         self.assertEqual(out[0]["fixed_in"], "156.0.8078.47")
+
+
+class LogReviewRegressionTests(unittest.TestCase):
+    STRINGS = w.load_profile()["settings"]["strings"]
+
+    def kept(self, *cands):
+        watch = {"name": "Next.js", "category": "FRAMEWORK", "tag": "#JavaScript"}
+        return [(c, watch) for c in cands]
+
+    def test_critical_advisory_is_not_hidden_behind_a_milder_one_of_the_same_product(self):
+        dos = cand(id="GHSA-dos", cve_ids=["CVE-2026-1"], cvss=8.2, grain="advisory", title="DoS", url="https://example.com/dos")
+        rce = cand(id="GHSA-rce", cve_ids=[], cvss=None, severity="critical", grain="advisory", title="Unauthenticated RCE", url="https://example.com/rce")
+        batches = w.group_batches(self.kept(dos, rce))
+        self.assertEqual(sorted(b["title"] for b in batches), ["DoS", "Unauthenticated RCE"])
+
+    def test_same_cve_from_two_advisory_entries_is_one_batch(self):
+        a = cand(id="GHSA-a", cve_ids=["CVE-2026-1"], cvss=8.2, grain="advisory", url="https://example.com/a")
+        b = cand(id="GHSA-b", cve_ids=["CVE-2026-1"], cvss=8.2, grain="advisory", url="https://example.com/b")
+        self.assertEqual(len(w.group_batches(self.kept(a, b))), 1)
+
+    def test_release_sources_still_group_per_product(self):
+        a = cand(id="r1", cve_ids=["CVE-2026-1"], cvss=9.0)
+        b = cand(id="r2", cve_ids=["CVE-2026-2"], cvss=9.0)
+        self.assertEqual(len(w.group_batches(self.kept(a, b))), 1)
+
+    def test_label_follows_cvss_not_the_vendor_word(self):
+        line = w.severity_line({"cvss": 8.2, "severity": "critical", "exploited": False}, self.STRINGS)
+        self.assertEqual(line, "Mức độ: Cao (CVSS 8.2)")
+        self.assertEqual(w.severity_line({"cvss": None, "severity": "critical", "exploited": False}, self.STRINGS), "Mức độ: Nghiêm trọng")
+
+    def test_negated_type_is_not_reported(self):
+        text = "This flaw does not lead to remote code execution. It causes denial of service."
+        self.assertEqual([t["label"] for t in w.detect_types(text, w.VULN_TYPES)], ["từ chối dịch vụ"])
+
+    def test_claims_about_missing_exploitation_are_rejected(self):
+        self.assertTrue(w.META_RE.search("Chưa ghi nhận khai thác."))
+
+    def test_second_repair_request_is_used(self):
+        batch = {"batch_id": "B1", "product": "P", "cve_ids": [], "title": "t", "summary": "s", "detail": "", "fixed_in": "",
+                 "affected": "", "cvss": None, "tier": 3, "count": 1, "exploited": False, "in_kev": False, "types": []}
+        words = " ".join(["từ"] * 50)
+        good = {"batch_id": "B1", "headline": "h", "description": words, "impact": "i", "action": "a"}
+        bad = dict(good, description="ngắn")
+        replies = iter([{"items": [bad]}, bad, good])
+        with mock.patch.object(w.llm, "call_json", side_effect=lambda *a, **k: next(replies)):
+            pairs, failed = w.summarize([batch], NOW, "sys", log=lambda *_: None)
+        self.assertEqual(len(pairs), 1)
+        self.assertEqual(failed, [])
+
+    def test_long_message_is_split_between_blocks(self):
+        from app import slack
+        blocks = [("x" * 1500) for _ in range(5)]
+        text = slack.SLACK_SEP.join(blocks)
+        parts = slack.split_message(text)
+        self.assertGreater(len(parts), 1)
+        self.assertTrue(all(len(p) <= slack.MAX_MESSAGE for p in parts))
+        self.assertEqual(slack.SLACK_SEP.join(parts), text)
+        self.assertEqual(slack.split_message("short"), ["short"])
+
+    def test_empty_answer_from_a_source_is_flagged(self):
+        fetchers = {"x": lambda src, cutoff, token=None: ([], "ok (0 in window, no dated entries)")}
+        _, status = ss.collect([{"name": "N", "type": "x"}], NOW, fetchers=fetchers, log=lambda *_: None)
+        self.assertTrue(status["N"].startswith("WARN?"))
+
+
+class EmptyReleaseListTests(unittest.TestCase):
+    def test_empty_answer_is_retried_once(self):
+        calls = []
+
+        def get(url, headers=None):
+            calls.append(url)
+            return [] if len(calls) == 1 else [{"tag_name": "v1.0.1", "published_at": "2026-10-21T10:00:00Z",
+                                                "body": "security release\n* (CVE-2026-1) tls: bug – High", "html_url": "https://x/r"}]
+        out, _ = ss.fetch_github_releases({"name": "N", "repo": "a/b", "product": "P"}, CUTOFF, get=get)
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(out[0]["id"], "v1.0.1")

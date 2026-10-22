@@ -40,7 +40,7 @@ def make_candidate(**kw):
         "ecosystem": "", "package": "", "cvss": None, "severity": None,
         "in_kev": False, "exploited": False, "vendor_security_release": False,
         "fixed_in": "", "affected": "",
-        "signal": False, "hn_points": 0, "hn_url": "", "detail": "",
+        "signal": False, "hn_points": 0, "hn_url": "", "detail": "", "grain": "product",
     }
     base.update(kw)
     return base
@@ -95,6 +95,7 @@ def advisory_to_candidates(adv, src, cutoff):
     for vuln in (adv.get("vulnerabilities") or [{}])[:10]:
         pkg = vuln.get("package") or {}
         out.append(make_candidate(
+            grain="advisory" if src.get("type") == "ghsa" else "product",
             id=cve or ghsa, source=src["name"], title=adv.get("summary") or ghsa,
             url=adv.get("html_url") or f"https://github.com/advisories/{ghsa}",
             published_at=published.isoformat(), summary=text[:MAX_SUMMARY],
@@ -214,7 +215,10 @@ def parse_node_security_notes(body):
 
 def fetch_github_releases(src, cutoff, get=get_json, token=None, **_):
     """Security releases announced in GitHub release notes (Node.js lists every CVE with its severity there)."""
-    releases = get(f"{GITHUB_API}/repos/{src['repo']}/releases?per_page=15", github_headers(token))
+    url = f"{GITHUB_API}/repos/{src['repo']}/releases?per_page=15"
+    releases = get(url, github_headers(token))
+    if not releases:  # an empty list for a busy repository is not believable; ask once more
+        releases = get(url, github_headers(token))
     pattern = re.compile(src.get("body_pattern", "security release"), re.I)
     out, newest = [], None
     for r in releases:
@@ -338,6 +342,8 @@ def collect(sources, now, token=None, window_hours=48, log=print, fetchers=None)
             m = re.search(r"newest entry (\d{4}-\d{2}-\d{2})", info)
             if stale_days and m and (now.date() - datetime.fromisoformat(m.group(1)).date()).days > stale_days:
                 info = f"STALE? {info} (older than {stale_days} days)"
+            if "no dated entries" in info and not got:
+                info = f"WARN? empty answer, {info}"
             status[src["name"]] = info
             cands.extend(got)
         except Exception as ex:
