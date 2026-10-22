@@ -1,3 +1,61 @@
 {
-  "posted": []
+  "posted": [
+    {
+      "date": "2026-10-22T15:46:14.448294+00:00",
+      "ids": [
+        "CVE-2026-106200",
+        "CVE-2026-106347",
+        "CVE-2026-113072",
+        "CVE-2026-113279",
+        "CVE-2026-113280",
+        "CVE-2026-113341"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "http://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html"
+    },
+    {
+      "date": "2026-10-22T15:46:14.448294+00:00",
+      "ids": [
+        "CVE-2026-109618",
+        "CVE-2026-109619"
+      ],
+      "headline": "RCE via OOM corruption",
+      "url": "https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w"
+    },
+    {
+      "date": "2026-10-22T15:46:14.448294+00:00",
+      "ids": [
+        "https://nodejs.org/en/blog/vulnerability/october-2026-security-releases"
+      ],
+      "headline": "Wednesday, October 21, 2026 Security Releases",
+      "url": "https://nodejs.org/en/blog/vulnerability/october-2026-security-releases"
+    },
+    {
+      "date": "2026-10-22T15:46:14.448294+00:00",
+      "ids": [
+        "CVE-2026-96656",
+        "CVE-2026-96655",
+        "CVE-2026-96654",
+        "CVE-2026-96652"
+      ],
+      "headline": "Plex Media Server External Control of File Name or Path Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-96656"
+    },
+    {
+      "date": "2026-10-22T15:46:14.448294+00:00",
+      "ids": [
+        "CVE-2026-106931"
+      ],
+      "headline": "EG Secure Solutions SiteGuard Server Edition OS Command Injection Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-106931"
+    },
+    {
+      "date": "2026-10-22T15:46:14.448294+00:00",
+      "ids": [
+        "CVE-2026-110936"
+      ],
+      "headline": "Siemens Software Center Uncontrolled Search Path Element Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-110936"
+    }
+  ]
 }
