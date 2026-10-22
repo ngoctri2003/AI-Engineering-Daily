@@ -179,6 +179,16 @@
       "date": "2026-10-22T01:30:21.070665+00:00",
       "headline": "GitHub CLI mở public preview cho OAuth token có thời hạn, tự refresh khi opt in",
       "url": "https://github.blog/changelog/2026-10-21-github-cli-opt-in-to-expiring-auto-refreshing-oauth-tokens"
+    },
+    {
+      "date": "2026-10-22T10:26:36.546284+00:00",
+      "headline": "GitHub cho phép chuyển toàn bộ branch protection của một repository sang rulesets chỉ trong một thao tác",
+      "url": "https://github.blog/changelog/2026-10-20-bulk-migrate-branch-protections-to-rulesets-for-a-repository"
+    },
+    {
+      "date": "2026-10-22T10:26:36.546284+00:00",
+      "headline": "OpenAI đưa frontier model và Codex workflow lên Google Cloud qua Model Garden và Google Cloud Marketplace",
+      "url": "https://openai.com/index/openai-models-google-cloud"
     }
   ]
 }
