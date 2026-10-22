@@ -14,7 +14,7 @@ on:
           - ai-daily
           - websec
           - both
-        default: ai-daily
+        default: both
 
 permissions:
   contents: write   # commit the state files (duplicate protection)
@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BULLETIN: ${{ inputs.bulletin || 'ai-daily' }}
+  BULLETIN: ${{ inputs.bulletin || 'both' }}
   POSTS_FOR_REAL: ${{ github.event_name == 'schedule' || inputs.dry_run == false }}
 
 jobs:
