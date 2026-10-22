@@ -1,8 +1,10 @@
 """Đăng Slack. Ưu tiên bot token (chat.postMessage, có thread); fallback incoming webhook."""
 import json
 import os
+import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 
 def _post_json(url, body, headers=None):
@@ -51,14 +53,35 @@ def split_message(text, limit=MAX_MESSAGE):
     return parts
 
 
-def post(text, notes=None):
+def post(text, notes=None, blocks=None):
+    if blocks:  # rich message (images): sent as one message, text limits apply per block
+        return _post_one(text, notes, blocks)
     chunks = split_message(text)
     for chunk in chunks[:-1]:
         _post_one(chunk)
     return _post_one(chunks[-1], notes)
 
 
-def _post_one(text, notes=None):
+def _slack_ok(raw):
+    res = json.loads(raw)
+    if not res.get("ok"):
+        raise RuntimeError(f"Slack error: {res.get('error')}")
+    return res
+
+
+def _call_with_retry(call, rich):
+    """A file uploaded a moment ago may not be usable in blocks yet (invalid_blocks), so retry briefly."""
+    attempts = 4 if rich else 1
+    for n in range(attempts):
+        try:
+            return call()
+        except RuntimeError as ex:
+            if n == attempts - 1 or "invalid_blocks" not in str(ex):
+                raise
+            time.sleep(1.5)
+
+
+def _post_one(text, notes=None, blocks=None):
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel = os.environ.get("SLACK_CHANNEL_ID")
     webhook = os.environ.get("SLACK_WEBHOOK_URL")
@@ -67,17 +90,20 @@ def _post_one(text, notes=None):
         if allow and channel not in allow:
             raise RuntimeError(f"Channel {channel} is not in the allow-list")
         auth = {"Authorization": f"Bearer {token}"}
-        res = json.loads(_post_json("https://slack.com/api/chat.postMessage", {
-            "channel": channel, "text": text, "mrkdwn": True,
-            "unfurl_links": False, "unfurl_media": False}, auth))
-        if not res.get("ok"):
-            raise RuntimeError(f"Slack error: {res.get('error')}")
+        payload = {"channel": channel, "text": text, "mrkdwn": True,
+                   "unfurl_links": False, "unfurl_media": False}
+        if blocks:
+            payload["blocks"] = blocks
+        res = _call_with_retry(
+            lambda: _slack_ok(_post_json("https://slack.com/api/chat.postMessage", payload, auth)), bool(blocks))
         if notes:
             _post_json("https://slack.com/api/chat.postMessage", {
                 "channel": channel, "thread_ts": res["ts"], "text": notes, "mrkdwn": True,
                 "unfurl_links": False}, auth)
         return
     if webhook:
+        if blocks:
+            raise RuntimeError("Images need SLACK_BOT_TOKEN and SLACK_CHANNEL_ID (a webhook cannot attach them)")
         _post_json(webhook, {"text": text, "mrkdwn": True})
         if notes:
             _post_json(webhook, {"text": notes, "mrkdwn": True})
@@ -85,7 +111,7 @@ def _post_one(text, notes=None):
     raise RuntimeError("Missing SLACK_BOT_TOKEN+SLACK_CHANNEL_ID or SLACK_WEBHOOK_URL")
 
 
-def schedule(text, post_at):
+def schedule(text, post_at, blocks=None):
     """Schedule a message with chat.scheduleMessage (bot token only). post_at is a unix timestamp."""
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel = os.environ.get("SLACK_CHANNEL_ID")
@@ -94,11 +120,12 @@ def schedule(text, post_at):
         raise RuntimeError("Scheduling needs SLACK_BOT_TOKEN and SLACK_CHANNEL_ID")
     if allow and channel not in allow:
         raise RuntimeError(f"Channel {channel} is not in the allow-list")
-    res = json.loads(_post_json("https://slack.com/api/chat.scheduleMessage", {
-        "channel": channel, "text": text, "post_at": int(post_at), "mrkdwn": True,
-        "unfurl_links": False, "unfurl_media": False}, {"Authorization": f"Bearer {token}"}))
-    if not res.get("ok"):
-        raise RuntimeError(f"Slack error: {res.get('error')}")
+    payload = {"channel": channel, "text": text, "post_at": int(post_at), "mrkdwn": True,
+               "unfurl_links": False, "unfurl_media": False}
+    if blocks:
+        payload["blocks"] = blocks
+    _call_with_retry(lambda: _slack_ok(_post_json(
+        "https://slack.com/api/chat.scheduleMessage", payload, {"Authorization": f"Bearer {token}"})), bool(blocks))
 
 
 def _config():
@@ -151,3 +178,24 @@ def cancel_scheduled(scheduled_id):
         "channel": channel, "scheduled_message_id": scheduled_id}, {"Authorization": f"Bearer {token}"}))
     if not res.get("ok"):
         raise RuntimeError(f"Slack error: {res.get('error')}")
+
+
+def upload_images(images):
+    """Upload [(filename, bytes)] to Slack without sharing them; return the file ids (needs the files:write scope)."""
+    token, _channel = _config()
+
+    def one(item):
+        name, data = item
+        res = _get("files.getUploadURLExternal", {"filename": name, "length": len(data)}, token)
+        req = urllib.request.Request(res["upload_url"], data=data, method="POST",
+                                     headers={"Content-Type": "application/octet-stream"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            r.read()
+        return res["file_id"]
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        ids = list(pool.map(one, images))
+    _slack_ok(_post_json("https://slack.com/api/files.completeUploadExternal", {
+        "files": [{"id": i, "title": n} for i, (n, _data) in zip(ids, images)]},
+        {"Authorization": f"Bearer {token}"}))
+    return ids

@@ -70,6 +70,19 @@
   .tips { margin:14px 0 0; padding:0; list-style:none; color:var(--muted); font-size:13px; }
   .tips li { margin:3px 0; }
   .tips code { background:var(--soft); padding:0 4px; border-radius:4px; }
+  /* images */
+  .drop { border:1.5px dashed var(--line); border-radius:10px; padding:12px; background:var(--bg); }
+  .drop.over { border-color:var(--accent); background:var(--accent-soft); }
+  .drop-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .drop-row span { color:var(--muted); font-size:13px; }
+  .thumbs { display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:8px; margin-top:10px; }
+  .thumbs:empty { display:none; }
+  .thumb { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--soft); }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb button { position:absolute; top:4px; right:4px; width:22px; height:22px; border:0; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:14px; line-height:1; cursor:pointer; }
+  .pimgs { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .pimgs:empty { display:none; }
+  .pimgs img { max-width:100%; max-height:200px; border-radius:8px; border:1px solid var(--line); align-self:flex-start; }
   /* activity */
   #activity { margin-top:20px; }
   .act-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
@@ -135,6 +148,21 @@
       </div>
 
       <div class="field">
+        <div class="field-head">
+          <span class="lbl">Images <small style="font-weight:400;color:var(--muted)">(optional)</small></span>
+          <span class="count" id="icount">0 / 10</span>
+        </div>
+        <div class="drop" id="drop">
+          <div class="drop-row">
+            <button type="button" class="btn" id="addImg">Add images</button>
+            <span>or drag and drop, or paste (Ctrl + V) in the message box</span>
+          </div>
+          <input id="imgInput" type="file" accept="image/*" multiple hidden>
+          <div class="thumbs" id="thumbs"></div>
+        </div>
+      </div>
+
+      <div class="field">
         <div class="lbl" style="margin-bottom:8px">When to send</div>
         <div class="seg" role="group" aria-label="When to send">
           <button type="button" id="modeNow" aria-pressed="true">Send now</button>
@@ -163,6 +191,7 @@
           <div style="min-width:0;flex:1">
             <div class="name">AI Engineering Daily<small id="stamp"></small></div>
             <div class="msg" id="preview"></div>
+            <div class="pimgs" id="pimgs"></div>
           </div>
         </div>
       </div>
@@ -170,6 +199,7 @@
         <li><code>*bold*</code> <code>_italic_</code> <code>`code`</code> <code>&lt;https://url|label&gt;</code></li>
         <li>The title is posted in bold above the message.</li>
         <li>Scheduled messages can be set 1 minute to 120 days ahead.</li>
+        <li>Up to 10 images, resized in your browser to about 3 MB in total. GIFs are sent as a still image.</li>
       </ul>
     </aside>
   </form>
@@ -206,6 +236,8 @@
   const preview = $("preview"), summary = $("summary"), dlg = $("dlg"), toast = $("toast");
   let later = false, busy = false, onConfirm = null;
   let data = { scheduled: [], sent: [], warnings: [] }, tab = "scheduled";
+  const MAX_IMAGES = 10, IMAGE_BUDGET = 2800000;
+  let images = [];
 
   const fmt = (d) => d.toLocaleString([], { weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
   const pad = (n) => String(n).padStart(2, "0");
@@ -290,20 +322,82 @@
     clearTimeout(showToast.t); showToast.t = setTimeout(() => { toast.className = ""; }, 4000);
   }
 
+  // ---- Images: kept as File objects, resized to JPEG only when sending ----
+  function addFiles(list) {
+    const files = Array.from(list || []).filter((f) => f.type.startsWith("image/"));
+    if (!files.length) return;
+    const room = MAX_IMAGES - images.length;
+    if (files.length > room) showToast("Up to " + MAX_IMAGES + " images per message", true);
+    files.slice(0, Math.max(room, 0)).forEach((file) => images.push({ file, url: URL.createObjectURL(file) }));
+    renderImages();
+  }
+  function removeImage(i) { URL.revokeObjectURL(images[i].url); images.splice(i, 1); renderImages(); }
+  function clearImages() { images.forEach((m) => URL.revokeObjectURL(m.url)); images = []; renderImages(); }
+  function renderImages() {
+    const th = $("thumbs"), pv = $("pimgs");
+    th.textContent = ""; pv.textContent = "";
+    images.forEach((m, i) => {
+      const box = document.createElement("div"); box.className = "thumb";
+      const img = document.createElement("img"); img.src = m.url; img.alt = m.file.name;
+      const x = document.createElement("button");
+      x.type = "button"; x.textContent = "×"; x.title = "Remove"; x.setAttribute("aria-label", "Remove image");
+      x.addEventListener("click", () => removeImage(i));
+      box.append(img, x); th.appendChild(box);
+      const big = document.createElement("img"); big.src = m.url; big.alt = ""; pv.appendChild(big);
+    });
+    $("icount").textContent = images.length + " / " + MAX_IMAGES;
+  }
+  async function toJpeg(file, maxSide, quality) {
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(bmp.width * scale)); c.height = Math.max(1, Math.round(bmp.height * scale));
+    const g = c.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);  // transparent PNGs get a white background
+    g.drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    const blob = await new Promise((res) => c.toBlob(res, "image/jpeg", quality));
+    if (!blob) throw new Error("encode");
+    return blob;
+  }
+  function blobToBase64(blob) {
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result).split(",")[1]); fr.onerror = rej; fr.readAsDataURL(blob);
+    });
+  }
+  // Try progressively smaller sizes until all images fit the request budget (Vercel body limit is 4.5 MB).
+  async function prepareImages() {
+    if (!images.length) return [];
+    const steps = [[1600, 0.82], [1280, 0.72], [1024, 0.64], [800, 0.55]];
+    for (const [side, q] of steps) {
+      const blobs = [];
+      for (const m of images) blobs.push(await toJpeg(m.file, side, q));
+      if (blobs.reduce((n, b) => n + b.size, 0) <= IMAGE_BUDGET) return Promise.all(blobs.map(blobToBase64));
+    }
+    throw new Error("too_big");
+  }
+
   async function send() {
     const d = scheduledAt(), wasLater = later;
     busy = true; refresh(); btn.textContent = later ? "Scheduling..." : "Sending...";
+    let imgs = [];
+    try { imgs = await prepareImages(); }
+    catch (err) {
+      showToast(err.message === "too_big" ? "Images are too large in total, remove some" : "Could not read one of the images", true);
+      busy = false; refresh(); return;
+    }
     try {
       const r = await fetch("/api/send", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.value, text: text.value, post_at: d ? Math.floor(d.getTime() / 1000) : null })
+        body: JSON.stringify({ title: title.value, text: text.value, post_at: d ? Math.floor(d.getTime() / 1000) : null, images: imgs })
       });
       const res = await r.json().catch(() => ({}));
       if (r.ok) {
         showToast(later ? "Scheduled for " + fmt(d) : "Message sent to Slack");
-        title.value = ""; text.value = ""; when.value = ""; setMode(false);
+        title.value = ""; text.value = ""; when.value = ""; clearImages(); setMode(false);
         tab = wasLater ? "scheduled" : "sent"; setTimeout(loadActivity, 1500);
-      } else showToast(res.message || "Error " + r.status, true);
+      } else showToast(res.message || (r.status === 413 ? "Images are too large in total" : "Error " + r.status), true);
     } catch (err) { showToast("Network error, nothing was sent", true); }
     busy = false; refresh();
   }
@@ -312,10 +406,11 @@
     if (btn.disabled) return;
     onConfirm = null;
     const d = scheduledAt();
+    const imgNote = images.length ? " with " + images.length + (images.length === 1 ? " image" : " images") : "";
     $("dlgTitle").textContent = later ? "Schedule this message?" : "Send this message now?";
     $("dlgBody").innerHTML = later
-      ? 'It will be posted to the Slack channel on <span class="when">' + esc(fmt(d)) + "</span>."
-      : "It will be posted to the Slack channel right away.";
+      ? 'It will be posted to the Slack channel' + imgNote + ' on <span class="when">' + esc(fmt(d)) + "</span>."
+      : "It will be posted to the Slack channel" + imgNote + " right away.";
     $("dlgOk").textContent = later ? "Schedule" : "Send";
     dlg.showModal();
   }
@@ -326,6 +421,18 @@
   $("modeNow").addEventListener("click", () => setMode(false));
   $("modeLater").addEventListener("click", () => setMode(true));
   $("linkBtn").addEventListener("click", insertLink);
+  $("addImg").addEventListener("click", () => $("imgInput").click());
+  $("imgInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  text.addEventListener("paste", (e) => {
+    const cd = e.clipboardData;
+    const fs = cd ? Array.from(cd.files).filter((f) => f.type.startsWith("image/")) : [];
+    if (fs.length && !cd.getData("text")) { e.preventDefault(); addFiles(fs); }
+  });
+  ["dragenter", "dragover"].forEach((ev) => $("drop").addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => $("drop").addEventListener(ev, (e) => {
+    e.preventDefault(); $("drop").classList.remove("over");
+    if (ev === "drop") addFiles(e.dataTransfer.files);
+  }));
   document.querySelectorAll("[data-wrap]").forEach((b) => b.addEventListener("click", () => wrapSel(b.dataset.wrap)));
   document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
   [title, text, when].forEach((el) => el.addEventListener("input", refresh));
