@@ -1,4 +1,53 @@
 {
   "posted": [
+    {
+      "date": "2026-10-22T16:26:46.579409+00:00",
+      "ids": [
+        "CVE-2026-109618",
+        "CVE-2026-109619"
+      ],
+      "headline": "RCE via OOM corruption",
+      "url": "https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w"
+    },
+    {
+      "date": "2026-10-22T16:26:46.579409+00:00",
+      "ids": [
+        "GHSA-2464-fhr4-w9xw",
+        "CVE-2026-94482"
+      ],
+      "headline": "Next.js: Denial of Service in App Router using Server Actions",
+      "url": "https://github.com/advisories/GHSA-p3m5-59mp-jv5r"
+    },
+    {
+      "date": "2026-10-22T16:26:46.579409+00:00",
+      "ids": [
+        "CVE-2026-113341",
+        "CVE-2026-113279",
+        "CVE-2026-113072",
+        "CVE-2026-113280"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html"
+    },
+    {
+      "date": "2026-10-22T16:26:46.579409+00:00",
+      "ids": [
+        "CVE-2026-113399",
+        "CVE-2026-113470"
+      ],
+      "headline": "Security Vulnerabilities fixed in Firefox 158.0.1",
+      "url": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-111/"
+    },
+    {
+      "date": "2026-10-22T16:26:46.579409+00:00",
+      "ids": [
+        "CVE-2026-96656",
+        "CVE-2026-96655",
+        "CVE-2026-96654",
+        "CVE-2026-96652"
+      ],
+      "headline": "Plex Media Server External Control of File Name or Path Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-96656"
+    }
   ]
 }
