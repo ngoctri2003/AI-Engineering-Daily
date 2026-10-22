@@ -69,6 +69,15 @@ class FetcherTests(unittest.TestCase):
         self.assertTrue(out[0]["exploited"])
         self.assertEqual((out[0]["severity"], out[0]["cve_ids"]), ("critical", ["CVE-2026-3333"]))
 
+    def test_blogger_atom_picks_the_post_link_not_the_comments_feed(self):
+        xml = ("<feed xmlns='http://www.w3.org/2005/Atom'><entry><title>Stable Channel Update</title>"
+               "<link rel='replies' type='application/atom+xml' href='http://c.example/feeds/1/comments/default'/>"
+               "<link rel='alternate' type='text/html' href='https://c.example/2026/10/stable.html'/>"
+               "<updated>2026-10-21T08:00:00Z</updated><content>Critical CVE-2026-3333 fix.</content></entry></feed>")
+        src = {"name": "Chrome Releases", "url": "u", "product": "Chrome", "pattern": r"CVE-\d{4}-\d{4,7}"}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=lambda url: xml)
+        self.assertEqual(out[0]["url"], "https://c.example/2026/10/stable.html")
+
     def test_collect_survives_a_failing_source(self):
         def boom(src, cutoff, token=None):
             raise RuntimeError("down")
@@ -283,7 +292,9 @@ class ReviewRegressionTests(unittest.TestCase):
 
     def test_non_string_fields_degrade_instead_of_crashing(self):
         resp = {"items": [{**GOOD, "batch_id": ["B1"]}, {**GOOD, "headline": ["x"]}, "text", None, {**GOOD, "impact": 5}]}
-        pairs, failed = w.summarize([batch()], NOW, "sys", resp, log=lambda m: None)
+        # first call returns the malformed items, the repair call returns junk
+        with mock.patch.object(w.llm, "call_json", side_effect=[resp, {}, {}]):
+            pairs, failed = w.summarize([batch()], NOW, "sys", None, log=lambda m: None)
         self.assertEqual((pairs, [b["batch_id"] for b in failed]), ([], ["B1"]))
 
     def test_one_liner_never_uses_free_text(self):
@@ -314,6 +325,44 @@ class ReviewRegressionTests(unittest.TestCase):
     def test_version_must_match_whole_token(self):
         self.assertTrue(any("numbers" in e for e in w.validate_summary(
             {**GOOD, "action": "Update to 5.1 and redeploy."}, batch(fixed_in="15.1.2", affected="< 15.1.2", title="x 25.1 y"))))
+
+    def test_branch_prefix_of_a_known_version_is_accepted(self):
+        b = batch(fixed_in="8.2.35", affected="< 8.2.35", title="PHP flaw", summary="x")
+        ok = {**GOOD, "impact": f"PHP 8.2 builds below 8.2.35 are affected. {WORDS} {WORDS}", "action": "Update to 8.2.35."}
+        self.assertEqual(w.validate_summary(ok, b), [])
+        bad = {**GOOD, "impact": f"PHP 8.3 builds below 8.2.35 are affected. {WORDS} {WORDS}", "action": "Update to 8.2.35."}
+        self.assertTrue(any("numbers" in e for e in w.validate_summary(bad, b)))
+
+    def test_one_repair_request_fixes_an_invalid_item(self):
+        too_long = {**GOOD, "description": " ".join(["long"] * 90)}
+        calls = []
+
+        def fake(system, user, payload=None):
+            calls.append(user)
+            return {"items": [too_long]} if len(calls) == 1 else GOOD
+        with mock.patch.object(w.llm, "call_json", fake):
+            pairs, failed = w.summarize([batch()], NOW, "sys", None, log=lambda m: None)
+        self.assertEqual((len(pairs), failed, len(calls)), (1, [], 2))
+        self.assertIn("Errors:", calls[1])
+
+    def test_omitted_batch_is_logged_and_degraded(self):
+        logs = []
+        pairs, failed = w.summarize([batch()], NOW, "sys", {"items": []}, log=logs.append)
+        self.assertEqual((pairs, [b["batch_id"] for b in failed]), ([], ["B1"]))
+        self.assertTrue(any("omitted" in m for m in logs))
+
+    def test_pattern_feed_needs_a_severity_hint_to_qualify(self):
+        xml = ("<rss><channel><item><title>Stable Update</title><link>https://c.example/1</link>"
+               "<pubDate>Wed, 21 Oct 2026 08:00:00 GMT</pubDate>"
+               "<description>Fixes CVE-2026-3333 (Medium) and CVE-2026-3334 (Low).</description></item>"
+               "</channel></rss>")
+        src = {"name": "Chrome Releases", "url": "u", "product": "Chrome", "pattern": r"CVE-\d{4}-\d{4,7}"}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=lambda url: xml)
+        self.assertFalse(out[0]["vendor_security_release"])
+        self.assertEqual(w.prefilter(out, WATCH), [])
+        src_always = {**src, "qualify": "always"}
+        out2, _ = ss.fetch_feed(src_always, CUTOFF, get_text=lambda url: xml)
+        self.assertTrue(out2[0]["vendor_security_release"])
 
     def test_negated_in_the_wild_is_not_exploited(self):
         self.assertFalse(ss.exploited_in_wild("There are no reports of exploitation in the wild."))
