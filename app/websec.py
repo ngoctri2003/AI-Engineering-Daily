@@ -24,6 +24,7 @@ MAX_OTHERS = 8
 WORDS_MIN, WORDS_MAX = 40, 70
 MAX_STATE = 500
 MARKUP_RE = re.compile(r"https?:|www\.|[<>&|`]|@(?:channel|here|everyone)", re.I)
+META_RE = re.compile(r"dữ liệu (?:không|chưa)|không (?:nêu|đề cập|có thông tin|rõ)|the data (?:does not|doesn't)", re.I)
 VERSION_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)+(?!\w)(?!\.\d)")
 
 
@@ -40,9 +41,13 @@ Rules:
 - When the data lists several fixed versions (one per branch), name every one of them in the action.
 - Do not use the word "batch" in the text; say "bản cập nhật" or "advisory" instead.
 - headline: what is affected and what happened, include the CVE ID when there is one.
-- description: 1-2 facts taken only from the batch data.
-- impact: one sentence on who is affected (versions, conditions) taken only from the batch data.
-- action: one concrete step, for example the fixed version to update to. If the data has no fixed version, say so.
+- Readers are engineers who are not security experts. Say in plain words what the flaw is and what an attacker could do,
+  using plain_risk and detail from the data. Explain any technical term in a few words (for example "use after free (lỗi bộ nhớ)").
+- Severity, CVSS and exploitation status are shown by the system. Do not repeat them and never write about what the data lacks.
+- description: 1-2 facts taken only from the batch data, starting with what the flaw is, in plain words.
+- impact: one sentence on who is affected and what could happen (versions, conditions) from the batch data. Do not start it with the word "Ảnh hưởng".
+- action: one concrete step, for example the fixed version to update to. If no fixed version is listed, say to update to the latest
+  release from the vendor. Never write that the data is missing something.
 - description + impact + action together: 40-70 words. No emoji. No em dash.
 - Use only information present in the batch data. Never invent CVE IDs, version numbers, scores or links.
 - If the data is too thin for a full explanation, still return the item and say plainly what the data does not state;
@@ -145,6 +150,18 @@ def _join_unique(values, sep=", "):
     return sep.join(out)
 
 
+VULN_TYPES = load_json(PROFILE_DIR / "profile.json").get("vuln_types", [])
+
+
+def detect_types(text, types, limit=2):
+    """Plain-language vulnerability types found in the English source text (code-owned, never LLM-written)."""
+    found = []
+    for t in types:
+        if re.search(t["pattern"], text, re.I) and t not in found:
+            found.append(t)
+    return found[:limit]
+
+
 def group_batches(kept):
     """One batch per product inside the window, so one CVE can never appear in two batches."""
     groups = {}
@@ -170,8 +187,10 @@ def group_batches(kept):
             "fixed_in": _join_unique(i["fixed_in"] for i in items),
             "affected": _join_unique((i["affected"] for i in items), sep="; "),
             "summary": " | ".join(i["summary"] for i in items if i["summary"])[:secsources.MAX_SUMMARY * 2],
+            "detail": " || ".join(i["detail"] for i in items if i.get("detail"))[:3000],
             "category": (g["watch"] or {}).get("category"), "tag": (g["watch"] or {}).get("tag"),
         }
+        batch["types"] = detect_types(f"{batch['title']} {batch['summary']} {batch['detail']}", VULN_TYPES)
         batch["tier"] = _tier(batch, g["watch"])
         batches.append(batch)
     return batches
@@ -204,13 +223,13 @@ def select(batches, max_detailed=MAX_DETAILED, max_others=MAX_OTHERS):
 
 def build_user_prompt(detailed, now):
     keys = ("batch_id", "product", "cve_ids", "cvss", "exploited", "in_kev", "title", "summary", "fixed_in", "affected", "count")
-    data = [{k: b[k] for k in keys} for b in detailed]
+    data = [dict({k: b[k] for k in keys}, detail=b.get("detail", ""), plain_risk=[t["risk"] for t in b.get("types", [])]) for b in detailed]
     return (f"Today: {now.astimezone(TZ_VN):%Y-%m-%d} (Vietnam time).\n"
             f"BATCH DATA (JSON):\n{json.dumps(data, ensure_ascii=False)}\n\n{SCHEMA}")
 
 
 def source_text(batch):
-    parts = [batch["title"], batch["summary"], batch["fixed_in"], batch["affected"], " ".join(batch["cve_ids"])]
+    parts = [batch["title"], batch["summary"], batch.get("detail", ""), batch["fixed_in"], batch["affected"], " ".join(batch["cve_ids"])]
     if batch["cvss"] is not None:
         parts.append(f"{batch['cvss']:g}")
     return " ".join(p for p in parts if p)
@@ -235,6 +254,8 @@ def validate_summary(item, batch):
         errs.append("contains em dash")
     if formatter.EMOJI_RE.search(text):
         errs.append("contains emoji")
+    if META_RE.search(text):
+        errs.append("talks about missing data; state facts only and omit what is unknown")
     unknown = [c for c in secsources.CVE_RE.findall(text) if c not in batch["cve_ids"]]
     if unknown:
         errs.append(f"CVE IDs not in source data: {unknown}")
@@ -248,10 +269,26 @@ def validate_summary(item, batch):
 
 
 def one_liner(batch, strings):
-    ids = ", ".join(batch["cve_ids"][:3]) or "security update"
+    kind = ", ".join(t["label"] for t in batch.get("types", [])) or strings.get("generic_type", "security issue")
+    ids = ", ".join(batch["cve_ids"][:3])
     more = f" +{len(batch['cve_ids']) - 3}" if len(batch["cve_ids"]) > 3 else ""
     fix = f" ({strings['fixed']}: {batch['fixed_in']})" if batch["fixed_in"] else ""
-    return f"• {batch['product']}: {ids}{more}{fix} {batch['url']}"
+    return f"• {batch['product']}: {kind}{' (' + ids + more + ')' if ids else ''}{fix} {batch['url']}"
+
+
+def severity_line(batch, strings):
+    """Code-owned severity facts, so the LLM never has to describe them (or what is missing)."""
+    score, sev = batch.get("cvss"), batch.get("severity")
+    label = strings["critical"] if (score or 0) >= CRITICAL_SCORE or sev == "critical" else (
+        strings["high"] if (score or 0) >= CVSS_THRESHOLD or sev == "high" else "")
+    parts = [label + (f" (CVSS {score:g})" if score is not None else "") if label else (f"CVSS {score:g}" if score is not None else "")]
+    if batch.get("exploited"):
+        parts.append(strings["exploited"])
+    return f"{strings['severity']}: " + ", ".join(p for p in parts if p) if any(parts) else ""
+
+
+def _strip_label(text, label):
+    return re.sub(rf"^\s*{re.escape(label)}\s*:?\s*", "", text, flags=re.I)
 
 
 def render_item(batch, item, strings):
@@ -259,9 +296,11 @@ def render_item(batch, item, strings):
     tags = [t for t in (batch["tag"], kind) if t][:2]
     lines = [f"*[{batch['category']}] {formatter.clean(item['headline'])}*",
              " ".join(f"`{t}`" for t in tags),
+             *[x for x in (severity_line(batch, strings),
+                           f"{strings['vuln_type']}: " + ", ".join(t["label"] for t in batch["types"]) if batch.get("types") else "") if x],
              formatter.clean(item["description"]),
-             f"{strings['impact']}: {formatter.clean(item['impact'])}",
-             f"{strings['action']}: {formatter.clean(item['action'])}",
+             f"{strings['impact']}: {_strip_label(formatter.clean(item['impact']), strings['impact'])}",
+             f"{strings['action']}: {_strip_label(formatter.clean(item['action']), strings['action'])}",
              f"🔗 {batch['url']}"]
     return "\n".join(lines)
 

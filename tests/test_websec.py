@@ -593,3 +593,57 @@ class CombinedBulletinTests(unittest.TestCase):
         with redirect_stdout(out):
             m.run(dry_run=True, mock_file=str(Path(__file__).parent / "fixture.json"))
         self.assertNotIn("Cảnh báo bảo mật", out.getvalue())
+
+
+class PlainLanguageTests(unittest.TestCase):
+    STRINGS = w.load_profile()["settings"]["strings"]
+
+    def test_types_detected_from_english_source(self):
+        found = w.detect_types("High CVE-1: Use after free in Skia. CVE-2: Type confusion in V8", w.VULN_TYPES)
+        self.assertEqual([t["label"] for t in found], ["hỏng bộ nhớ"])
+        self.assertEqual(w.detect_types("nothing special", w.VULN_TYPES), [])
+
+    def test_severity_line_is_code_owned(self):
+        line = w.severity_line({"cvss": 9.6, "severity": None, "exploited": True}, self.STRINGS)
+        self.assertEqual(line, "Mức độ: Nghiêm trọng (CVSS 9.6), đã bị khai thác thực tế")
+        self.assertEqual(w.severity_line({"cvss": None, "severity": None, "exploited": False}, self.STRINGS), "")
+
+    def test_one_liner_says_what_kind_of_flaw(self):
+        batch = {"product": "Firefox", "cve_ids": ["CVE-2026-1"], "fixed_in": "158.0.1", "url": "https://x", "types": w.VULN_TYPES[2:3]}
+        self.assertIn("Firefox: hỏng bộ nhớ (CVE-2026-1)", w.one_liner(batch, self.STRINGS))
+        batch["types"] = []
+        self.assertIn("lỗi bảo mật", w.one_liner(batch, self.STRINGS))
+
+    def test_missing_data_statements_are_rejected(self):
+        for phrase in ("Dữ liệu không nêu phiên bản", "không đề cập bản vá", "the data does not say"):
+            self.assertTrue(w.META_RE.search(phrase), phrase)
+        self.assertFalse(w.META_RE.search("Cập nhật lên 8.2.35"))
+
+    def test_repeated_label_is_stripped(self):
+        item = {"headline": "H", "description": "D", "impact": "Ảnh hưởng Chrome desktop", "action": "Hành động: Cập nhật"}
+        batch = {"cve_ids": [], "url": "https://x", "exploited": False, "tag": "#Chrome", "category": "BROWSER"}
+        text = w.render_item(batch, item, self.STRINGS)
+        self.assertIn("Ảnh hưởng: Chrome desktop", text)
+        self.assertIn("Hành động: Cập nhật", text)
+
+    def test_cve_record_detail_has_weakness_and_description(self):
+        record = {"containers": {"cna": {"problemTypes": [{"descriptions": [{"lang": "en", "description": "CWE-416 Use After Free"}]}],
+                                           "descriptions": [{"lang": "en", "value": "Use after free in Skia\n in Chrome."}]}}}
+        self.assertEqual(ss.extract_detail(record), "CWE-416 Use After Free | Use after free in Skia in Chrome.")
+
+    def test_enrich_stores_detail(self):
+        record = {"containers": {"cna": {"descriptions": [{"lang": "en", "value": "Heap buffer overflow in X"}]}}}
+        c = cand(cvss=None)
+        ss.enrich_cvss([c], get=lambda url: record, log=lambda *_: None)
+        self.assertIn("Heap buffer overflow", c["detail"])
+
+    def test_chrome_fixed_version_from_post(self):
+        body = ("<p>The Stable channel has been updated to 156.0.8078.47 for Linux and 156.0.8078.47/.48 for Windows. "
+                "[$5000][1] Critical CVE-2026-113341: Use after free in Skia. Reported by X</p>")
+        feed = ('<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Stable Channel Update for Desktop</title>'
+                '<link rel="alternate" href="https://chromereleases.googleblog.com/p.html"/>'
+                f'<updated>2026-10-21T10:00:00Z</updated><content type="html">{body.replace("<", "&lt;").replace(">", "&gt;")}</content></entry></feed>')
+        src = {"name": "Chrome", "type": "feed", "url": "https://x/feed", "product": "Chrome", "pattern": "CVE-\\d{4}-\\d{4,7}",
+               "severity_lines": True, "fixed_in_pattern": "updated to ([0-9]+(?:\\.[0-9]+)+)"}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=lambda url: feed)
+        self.assertEqual(out[0]["fixed_in"], "156.0.8078.47")

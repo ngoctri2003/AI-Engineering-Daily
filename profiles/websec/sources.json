@@ -48,7 +48,8 @@
     "pattern": "CVE-\\d{4}-\\d{4,7}",
     "stale_after_days": 14,
     "snippet_chars": 30000,
-    "severity_lines": true
+    "severity_lines": true,
+    "fixed_in_pattern": "updated to ([0-9]+(?:\\.[0-9]+)+)"
   },
   {
     "name": "Hacker News (signal only)",

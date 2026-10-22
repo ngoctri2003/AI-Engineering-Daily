@@ -40,7 +40,7 @@ def make_candidate(**kw):
         "ecosystem": "", "package": "", "cvss": None, "severity": None,
         "in_kev": False, "exploited": False, "vendor_security_release": False,
         "fixed_in": "", "affected": "",
-        "signal": False, "hn_points": 0, "hn_url": "",
+        "signal": False, "hn_points": 0, "hn_url": "", "detail": "",
     }
     base.update(kw)
     return base
@@ -190,6 +190,10 @@ def fetch_feed(src, cutoff, get_text=news_sources.http_get, **_):
                     "high" if re.search(r"\bhigh\b", text, re.I) else None))),
             vendor_security_release=False))
         c = out[-1]
+        if src.get("fixed_in_pattern"):
+            m = re.search(src["fixed_in_pattern"], text)
+            if m:
+                c["fixed_in"] = m.group(1)
         # A feed set to "always" is a security release by nature. A pattern feed (Chrome) must also
         # carry a critical or high hint, or an in-the-wild hint, so medium/low-only releases do not qualify.
         c["vendor_security_release"] = src.get("qualify") == "always" or c["exploited"] or c["severity"] in ("critical", "high")
@@ -362,6 +366,16 @@ def extract_cvss(record):
     return max(scores) if scores else None
 
 
+def extract_detail(record):
+    """Plain facts from a CVE record: weakness names (CWE) and the first English description (shortened)."""
+    cna = (record.get("containers") or {}).get("cna") or {}
+    cwes = [d.get("description", "") for pt in cna.get("problemTypes") or [] for d in pt.get("descriptions") or []
+            if d.get("lang", "en").startswith("en") and d.get("description")]
+    desc = next((d.get("value", "") for d in cna.get("descriptions") or [] if d.get("lang", "en").startswith("en")), "")
+    parts = ["; ".join(dict.fromkeys(cwes)), re.sub(r"\s+", " ", desc).strip()[:300]]
+    return " | ".join(p for p in parts if p)
+
+
 def enrich_cvss(cands, get=get_json, log=print, limit=MAX_ENRICH, per_candidate=5):
     """Fill missing CVSS from cvelistV5 (highest score across the candidate's CVEs).
 
@@ -372,7 +386,7 @@ def enrich_cvss(cands, get=get_json, log=print, limit=MAX_ENRICH, per_candidate=
     for c in cands:
         if c["cvss"] is not None or not c["cve_ids"]:
             continue
-        scores = []
+        scores, details = [], []
         for cve in c["cve_ids"][:per_candidate]:
             if cve not in cache:
                 if lookups >= limit:
@@ -380,11 +394,16 @@ def enrich_cvss(cands, get=get_json, log=print, limit=MAX_ENRICH, per_candidate=
                     break
                 lookups += 1
                 try:
-                    cache[cve] = extract_cvss(get(cvelist_url(cve)))
+                    record = get(cvelist_url(cve))
+                    cache[cve] = (extract_cvss(record), extract_detail(record))
                 except Exception as ex:
-                    cache[cve] = None
+                    cache[cve] = (None, "")
                     log(f"[enrich] {cve}: {type(ex).__name__}: {ex}")
-            if cache.get(cve) is not None:
-                scores.append(cache[cve])
+            score, detail = cache.get(cve, (None, ""))
+            if score is not None:
+                scores.append(score)
+            if detail:
+                details.append(f"{cve}: {detail}")
         c["cvss"] = max(scores) if scores else None
+        c["detail"] = " || ".join(details)[:1500]
     return cands
