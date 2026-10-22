@@ -11,13 +11,15 @@ import traceback
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import alert, formatter, llm, slack, sources
+from . import alert, formatter, llm, slack, sources, websec
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 STATE = ROOT / "state" / "posted.json"
 TZ_VN = timezone(timedelta(hours=7))
 MAX_ITEMS = 5
+SECURITY_OTHERS = 3  # one-line security entries under the detailed ones
+SECURITY_SLOTS = 2  # detailed security items in the combined bulletin (5 + 2 = 7 items at most)
 
 SCHEMA = """Trả về DUY NHẤT một object JSON:
 {
@@ -89,8 +91,8 @@ def make_trend(system, items):
     return "" if formatter.EM_DASH in t or formatter.EMOJI_RE.search(t) else t
 
 
-def run(dry_run=False, mock_file=None):
-    now = datetime.now(timezone.utc)
+def run_ai(now, mock_file=None):
+    """Select and summarize the AI items. Posts nothing and writes no state."""
     rules = (HERE / "rules.md").read_text()
     system = rules + "\n\nBạn chỉ trả JSON đúng schema. Không thêm lời dẫn."
 
@@ -110,7 +112,7 @@ def run(dry_run=False, mock_file=None):
         if status and all(v.startswith("LỖI") for v in status.values()):
             raise RunError("Mọi nguồn tin đều lỗi, không lấy được dữ liệu. Kiểm tra mạng hoặc sources.json.")
         print("Không có ứng viên nào trong 48 giờ. Không đăng.")
-        return 0
+        return {"items": [], "trend": "", "notes": [], "state": load_state(), "result": {}}
     cand_urls = {c["url"] for c in cands}
     community_urls = {c["url"] for c in cands if c.get("kind") == "community"}
 
@@ -163,34 +165,79 @@ def run(dry_run=False, mock_file=None):
         print("Không có tin đạt chuẩn. Không đăng.")
         for n in notes_drop:
             print(n)
-        return 0
+        return {"items": [], "trend": "", "notes": [], "state": state, "result": result}
 
-    date_str = f"{now.astimezone(TZ_VN):%d/%m/%Y}"
     trend = result.get("trend", "") if mock else make_trend(system, items)
-    text = formatter.render_digest(items, trend, date_str)
-    problems = formatter.check_digest(text)
-    if problems:
-        raise RunError(f"Bản tin không đạt kiểm tra cuối: {'; '.join(problems)}")
-
     notes = []
     notes += [f"Loại: {d.get('title')}: {d.get('reason')}" for d in result.get("dropped", [])]
     notes += notes_drop
     notes += [f"Nguồn mâu thuẫn: {c}" for c in result.get("conflicts", [])]
     notes += [f"Nguồn lỗi: {k}: {v}" for k, v in status.items() if v.startswith("LỖI")]
+    return {"items": items, "trend": trend, "notes": notes, "state": state, "result": result}
+
+
+def run(dry_run=False, mock_file=None, with_security=False, security_mock=None):
+    """One Slack message. With with_security the message also carries up to SECURITY_SLOTS security items
+    (plus a short one-line block). A failure in one part never blocks the other; the error is raised after posting."""
+    now = datetime.now(timezone.utc)
+    sec, errors = None, []
+    if with_security:
+        try:
+            sec = websec.prepare(now, security_mock, max_detailed=SECURITY_SLOTS, max_others=SECURITY_OTHERS)
+        except Exception as ex:
+            traceback.print_exc()
+            errors.append(f"security section: {type(ex).__name__}: {ex}")
+    ai = None
+    try:
+        ai = run_ai(now, mock_file)
+    except Exception as ex:
+        if not with_security:
+            raise
+        traceback.print_exc()
+        errors.append(f"AI section: {type(ex).__name__}: {ex}")
+    items = ai["items"] if ai else []
+    pairs = sec["pairs"] if sec else []
+    others = sec["others"] if sec else []
+    extra = websec.section_blocks(pairs, others, sec["settings"]) if pairs else []
+    if not items and not pairs:
+        print("Không có tin nào để đăng.")
+        if errors:
+            raise RunError("; ".join(errors))
+        return 0
+    date_str = f"{now.astimezone(TZ_VN):%d/%m/%Y}"
+    text = formatter.render_digest(items, ai["trend"] if ai else "", date_str, extra_blocks=extra)
+    problems = formatter.check_digest(text, extra_items=len(pairs), extra_others=1 if pairs and others else 0)
+    if len(pairs) > SECURITY_SLOTS:
+        problems.append(f"more than {SECURITY_SLOTS} security items")
+    if problems:
+        raise RunError(f"Bản tin không đạt kiểm tra cuối: {'; '.join(problems)}")
     # Ghi chú chỉ ghi vào log Actions, không đăng lên Slack
     print(text)
+    notes = ai["notes"] if ai else []
     if notes:
         print("\n--- Ghi chú (chỉ trong log) ---\n" + "\n".join(f"- {n}" for n in notes))
+    if sec:
+        for name, info in sec["status"].items():
+            if info.startswith(("ERROR", "STALE")):
+                print(f"[source-note] {name}: {info}")
     if dry_run:
         print("\n[dry-run] Không đăng Slack, không ghi state.")
+        if errors:
+            raise RunError("; ".join(errors))
         return 0
 
     slack.post(text)
-    for it in items:
-        state["posted"].append({"date": now.isoformat(), "headline": it["headline"], "url": it["url"]})
-    state["posted"] = state["posted"][-200:]
-    save_state(state)
+    if items:
+        state = ai["state"]
+        for it in items:
+            state["posted"].append({"date": now.isoformat(), "headline": it["headline"], "url": it["url"]})
+        state["posted"] = state["posted"][-200:]
+        save_state(state)
+    if pairs:
+        websec.commit_state(sec, now)
     print("Đã đăng.")
+    if errors:
+        raise RunError("; ".join(errors))
     return 0
 
 
@@ -198,6 +245,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--mock", help="file JSON gồm candidates + llm_response, chạy offline")
+    ap.add_argument("--with-security", action="store_true",
+                    help="ai-daily only: add the security section (up to 2 items) to the same message")
+    ap.add_argument("--security-mock", help="mock file for the security section (offline runs)")
     ap.add_argument("--profile", default="ai-daily", choices=["ai-daily", "websec"],
                     help="bulletin profile; the default keeps the original AI Engineering Daily behavior")
     a = ap.parse_args()
@@ -205,7 +255,7 @@ def main():
         if a.profile == "websec":
             from . import websec
             return websec.run(a.dry_run, a.mock)
-        return run(a.dry_run, a.mock)
+        return run(a.dry_run, a.mock, a.with_security, a.security_mock)
     except Exception as ex:  # ghi lý do (đã che secret) để bước báo lỗi Slack đọc
         traceback.print_exc()
         alert.write_reason(f"{type(ex).__name__}: {ex}")

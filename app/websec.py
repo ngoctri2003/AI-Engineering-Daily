@@ -24,7 +24,7 @@ MAX_OTHERS = 8
 WORDS_MIN, WORDS_MAX = 40, 70
 MAX_STATE = 500
 MARKUP_RE = re.compile(r"https?:|www\.|[<>&|`]|@(?:channel|here|everyone)", re.I)
-VERSION_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)+(?![\w.])")
+VERSION_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)+(?!\w)(?!\.\d)")
 
 
 class RunError(Exception):
@@ -37,6 +37,8 @@ Rules:
 - Write every text value in Vietnamese. Keep product names, CVE IDs and version numbers exactly as given.
 - Return one item per batch in the data, using the given batch_id. Do not add batches.
 - Write version numbers exactly as they appear in the data. Do not shorten or round them.
+- When the data lists several fixed versions (one per branch), name every one of them in the action.
+- Do not use the word "batch" in the text; say "bản cập nhật" or "advisory" instead.
 - headline: what is affected and what happened, include the CVE ID when there is one.
 - description: 1-2 facts taken only from the batch data.
 - impact: one sentence on who is affected (versions, conditions) taken only from the batch data.
@@ -134,6 +136,15 @@ def _tier(batch, watch):
     return 3
 
 
+def _join_unique(values, sep=", "):
+    """Distinct non-empty values in first-seen order. An advisory often has one fixed version per branch."""
+    out = []
+    for v in values:
+        if v and v not in out:
+            out.append(v)
+    return sep.join(out)
+
+
 def group_batches(kept):
     """One batch per product inside the window, so one CVE can never appear in two batches."""
     groups = {}
@@ -156,8 +167,8 @@ def group_batches(kept):
             "cvss": max(scores) if scores else None,
             "severity": next((i["severity"] for i in items if i["severity"]), None),
             "in_kev": any(i["in_kev"] for i in items), "exploited": any(i["exploited"] for i in items),
-            "fixed_in": next((i["fixed_in"] for i in items if i["fixed_in"]), ""),
-            "affected": next((i["affected"] for i in items if i["affected"]), ""),
+            "fixed_in": _join_unique(i["fixed_in"] for i in items),
+            "affected": _join_unique((i["affected"] for i in items), sep="; "),
             "summary": " | ".join(i["summary"] for i in items if i["summary"])[:secsources.MAX_SUMMARY * 2],
             "category": (g["watch"] or {}).get("category"), "tag": (g["watch"] or {}).get("tag"),
         }
@@ -166,9 +177,26 @@ def group_batches(kept):
     return batches
 
 
+def attach_signals(batches, signals):
+    """Attach Hacker News stories to batches by CVE ID or identical link. Returns signals that matched nothing."""
+    unmatched = []
+    for sig in signals:
+        hit = False
+        for b in batches:
+            same_cve = bool(set(sig["cve_ids"]) & set(b["cve_ids"]))
+            same_link = sig["url"].rstrip("/") == b["url"].rstrip("/")
+            if same_cve or same_link:
+                hit = True
+                if sig["hn_points"] > b.get("hn_points", 0):
+                    b["hn_points"], b["hn_url"] = sig["hn_points"], sig["hn_url"]
+        if not hit:
+            unmatched.append(sig)
+    return sorted(unmatched, key=lambda x: -x["hn_points"])
+
+
 def select(batches, max_detailed=MAX_DETAILED, max_others=MAX_OTHERS):
     """Top batches (tier 1-3) get a detailed item; the rest become one-line entries."""
-    ranked = sorted(batches, key=lambda b: (b["tier"], -(b["cvss"] or 0), b["product"]))
+    ranked = sorted(batches, key=lambda b: (b["tier"], -(b["cvss"] or 0), -b.get("hn_points", 0), b["product"]))
     detailed = [b for b in ranked if b["tier"] <= 3][:max_detailed]
     rest = [b for b in ranked if b not in detailed]
     return detailed, rest[:max_others]
@@ -227,7 +255,8 @@ def one_liner(batch, strings):
 
 
 def render_item(batch, item, strings):
-    tags = [t for t in (batch["tag"], "#ZeroDay" if batch["exploited"] else "#CVE") if t][:2]
+    kind = "#ZeroDay" if batch["exploited"] else ("#CVE" if batch["cve_ids"] else "#Vulnerability")
+    tags = [t for t in (batch["tag"], kind) if t][:2]
     lines = [f"*[{batch['category']}] {formatter.clean(item['headline'])}*",
              " ".join(f"`{t}`" for t in tags),
              formatter.clean(item["description"]),
@@ -243,6 +272,17 @@ def render_digest(pairs, others, settings, date_str):
     if others:
         blocks.append(f"*{strings['others']}*\n" + "\n".join(one_liner(b, strings) for b in others))
     return f"\n\n{formatter.SEP}\n\n".join(blocks)
+
+
+def section_blocks(pairs, others, settings):
+    """Blocks for embedding in another bulletin: detailed items (first one carries the section heading) and the one-line block."""
+    strings = settings["strings"]
+    blocks = [render_item(b, i, strings) for b, i in pairs]
+    if blocks:
+        blocks[0] = f"*{strings['section']}*\n\n{blocks[0]}"
+    if others and pairs:
+        blocks.append(f"*{strings['others']}*\n" + "\n".join(one_liner(b, strings) for b in others))
+    return blocks
 
 
 def check_digest(text, pairs, others):
@@ -308,8 +348,11 @@ def summarize(detailed, now, system, mock_response=None, log=print):
     return pairs, failed
 
 
-def run(dry_run=False, mock_file=None, now=None):
-    now = now or datetime.now(timezone.utc)
+def prepare(now, mock_file=None, max_detailed=MAX_DETAILED, max_others=MAX_OTHERS, log=print):
+    """Collect, filter and summarize. Posts nothing and writes no state.
+
+    Returns a dict: pairs (batch, item), others, settings, status, state. Empty pairs means nothing to post.
+    """
     profile = load_profile()
     settings = profile["settings"]
     system = profile["rules"] + "\n\nReturn only JSON that matches the schema. No preamble."
@@ -321,42 +364,61 @@ def run(dry_run=False, mock_file=None, now=None):
         os.environ["LLM_PROVIDER"] = "mock"
         cands, status = mock["candidates"], {"mock": "ok"}
     else:
-        cands, status = secsources.collect(profile["sources"], now, token=os.environ.get("GITHUB_TOKEN"))
+        cands, status = secsources.collect(profile["sources"], now, token=os.environ.get("GITHUB_TOKEN"), log=log)
         if status and all(v.startswith("ERROR") for v in status.values()):
             raise RunError("All security sources failed. Check network access and sources.json.")
-    cands = drop_posted(cands, posted_ids)
+    signals = [c for c in cands if c.get("signal")]
+    cands = drop_posted([c for c in cands if not c.get("signal")], posted_ids)
     if not mock:
         # Enrich only what can matter: watchlist products and KEV entries (global feeds are large).
         secsources.enrich_cvss([c for c in cands if c["in_kev"] or match_watchlist(c, profile["watchlist"])])
     kept = prefilter(cands, profile["watchlist"])
     batches = group_batches(kept)
-    detailed, others = select(batches)
-    print(f"[run] {len(cands)} new candidates, {len(kept)} pass the filter, {len(batches)} batches, "
-          f"{len(detailed)} detailed, {len(others)} one-line")
+    for sig in attach_signals(batches, signals)[:5]:
+        log(f"[signal] HN {sig['hn_points']} points, not matched to any selected item: {sig['title'][:100]} {sig['hn_url']}")
+    detailed, others = select(batches, max_detailed, max_others)
+    log(f"[run] {len(cands)} new security candidates, {len(kept)} pass the filter, {len(batches)} batches, "
+        f"{len(detailed)} detailed, {len(others)} one-line")
+    result = {"pairs": [], "others": [], "settings": settings, "status": status, "state": state}
     if not detailed:
-        print("No batch reached the detailed tier. Nothing to post.")
-        return 0
-    pairs, failed = summarize(detailed, now, system, mock["llm_response"] if mock else None)
-    others = (failed + others)[:MAX_OTHERS]
+        log("No batch reached the detailed tier. Nothing to post.")
+        return result
+    pairs, failed = summarize(detailed, now, system, mock["llm_response"] if mock else None, log=log)
     if not pairs:
-        print("No valid summary. Nothing to post.")
+        log("No valid summary. Nothing to post.")
+        return result
+    result["pairs"] = pairs
+    result["others"] = (failed + others)[:max_others]
+    return result
+
+
+def commit_state(prep, now):
+    """Remember what was posted so it is not posted again."""
+    state = prep["state"]
+    for b in [p[0] for p in prep["pairs"]] + prep["others"]:
+        state["posted"].append({"date": now.isoformat(), "ids": b["ids"], "headline": b["title"], "url": b["url"]})
+    state["posted"] = state["posted"][-MAX_STATE:]
+    save_state(state)
+
+
+def run(dry_run=False, mock_file=None, now=None):
+    now = now or datetime.now(timezone.utc)
+    prep = prepare(now, mock_file)
+    pairs, others, settings = prep["pairs"], prep["others"], prep["settings"]
+    if not pairs:
         return 0
     text = render_digest(pairs, others, settings, f"{now.astimezone(TZ_VN):%d/%m/%Y}")
     problems = check_digest(text, pairs, others)
     if problems:
         raise RunError(f"Final digest check failed: {'; '.join(problems)}")
     print(text)
-    for name, info in status.items():
+    for name, info in prep["status"].items():
         if info.startswith(("ERROR", "STALE")):
             print(f"[source-note] {name}: {info}")
     if dry_run:
         print("\n[dry-run] Not posted to Slack, state not written.")
         return 0
     slack.post(text)
-    for b in [p[0] for p in pairs] + others:
-        state["posted"].append({"date": now.isoformat(), "ids": b["ids"],
-                                "headline": b["title"], "url": b["url"]})
-    state["posted"] = state["posted"][-MAX_STATE:]
-    save_state(state)
+    commit_state(prep, now)
     print("Posted.")
     return 0

@@ -82,7 +82,7 @@ def parse_feed(xml_text, src, cutoff):
             "source": src["name"], "priority": src["priority"],
             "title": (title.text or "").strip() if title is not None else "",
             "url": link.strip(), "published_at": d.astimezone(timezone.utc).isoformat(),
-            "snippet": body[:SNIPPET_CHARS],
+            "snippet": body[:src.get("snippet_chars", SNIPPET_CHARS)],
         })
     return items
 

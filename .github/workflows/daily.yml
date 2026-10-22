@@ -8,7 +8,7 @@ on:
         type: boolean
         default: true
       bulletin:
-        description: "Which bulletin to run"
+        description: "both = one message (AI + security, max 7 items); ai-daily or websec = single bulletin"
         type: choice
         options:
           - ai-daily
@@ -52,12 +52,13 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C3C2EJATZ' }}
           SLACK_ALLOWED_CHANNELS: ${{ vars.SLACK_ALLOWED_CHANNELS || 'C0C3C2EJATZ' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$POSTS_FOR_REAL" = "true" ]; then
-            python -m app.main --profile ai-daily
-          else
-            python -m app.main --profile ai-daily --dry-run
-          fi
+          # "both" = one combined message: AI items plus the security section (at most 7 items).
+          ARGS="--profile ai-daily"
+          if [ "$BULLETIN" = "both" ]; then ARGS="$ARGS --with-security"; fi
+          if [ "$POSTS_FOR_REAL" != "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python -m app.main $ARGS
       - name: Alert on AI Engineering Daily failure
         if: failure() && steps.ai_daily.outcome == 'failure' && env.POSTS_FOR_REAL == 'true'
         env:
@@ -68,10 +69,10 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python -m app.alert
 
-      # Runs even when the first bulletin failed, so one failure never blocks the other.
+      # Standalone security bulletin (only when explicitly selected; "both" is one combined message above).
       - name: Run Tech Stack Security Daily
         id: websec
-        if: ${{ !cancelled() && env.BULLETIN != 'ai-daily' }}
+        if: env.BULLETIN == 'websec'
         timeout-minutes: 10
         env:
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}

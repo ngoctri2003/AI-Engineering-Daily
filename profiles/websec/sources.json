@@ -28,12 +28,17 @@
     "product": "PHP"
   },
   {
-    "name": "Node.js security releases",
-    "type": "feed",
-    "url": "https://nodejs.org/en/feed/vulnerability.xml",
+    "name": "Node.js security releases (GitHub)",
+    "type": "github-releases",
+    "repo": "nodejs/node",
     "product": "Node.js",
-    "qualify": "always",
     "stale_after_days": 60
+  },
+  {
+    "name": "Mozilla security advisories (GitHub)",
+    "type": "mozilla-advisories",
+    "product": "Firefox",
+    "stale_after_days": 45
   },
   {
     "name": "Chrome Releases",
@@ -41,6 +46,23 @@
     "url": "https://chromereleases.googleblog.com/feeds/posts/default",
     "product": "Chrome",
     "pattern": "CVE-\\d{4}-\\d{4,7}",
-    "stale_after_days": 14
+    "stale_after_days": 14,
+    "snippet_chars": 30000,
+    "severity_lines": true
+  },
+  {
+    "name": "Hacker News (signal only)",
+    "type": "hn-signal",
+    "min_points": 30,
+    "queries": [
+      "chrome vulnerability",
+      "firefox vulnerability",
+      "node.js vulnerability",
+      "php vulnerability",
+      "wordpress vulnerability",
+      "next.js vulnerability",
+      "zero-day exploited",
+      "CVE-2026"
+    ]
   }
 ]

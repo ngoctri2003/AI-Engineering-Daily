@@ -106,22 +106,23 @@ def render_item(item):
     return "\n".join(lines)
 
 
-def render_digest(items, trend, date_str):
+def render_digest(items, trend, date_str, extra_blocks=()):
     head = [f"*AI Engineering Daily: {date_str}*"]
     if clean(trend):
         head.append(clean(trend))
-    blocks = ["\n".join(head)] + [render_item(i) for i in items]
+    blocks = ["\n".join(head)] + [render_item(i) for i in items] + list(extra_blocks)
     return f"\n\n{SEP}\n\n".join(blocks)
 
 
-def check_digest(text):
-    """Kiểm tra cuối trên bản đã ghép."""
+def check_digest(text, extra_items=0, extra_others=0):
+    """Final check on the assembled text. extra_items: embedded security items (each has a link);
+    extra_others: 1 when a one-line block without links is embedded."""
     errs = []
     if EM_DASH in text:
         errs.append("bản tin có em dash")
-    n_items = text.count("🔗")
-    if text.count(SEP) != n_items:
+    n_links = text.count("🔗")
+    if text.count(SEP) != n_links + extra_others:
         errs.append("số đường phân cách không khớp số tin")
-    if n_items > 5:
+    if n_links - extra_items > 5:
         errs.append("quá 5 tin")
     return errs

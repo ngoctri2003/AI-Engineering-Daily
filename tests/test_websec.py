@@ -284,6 +284,10 @@ class RunTests(unittest.TestCase):
         os.environ.pop("LLM_PROVIDER", None)
 
 
+def self_strings():
+    return w.load_json(w.PROFILE_DIR / "profile.json")["strings"]
+
+
 @mock.patch.dict(os.environ, {"LLM_PROVIDER": "mock"})
 class ReviewRegressionTests(unittest.TestCase):
     def test_links_mentions_and_markup_are_rejected(self):
@@ -364,6 +368,52 @@ class ReviewRegressionTests(unittest.TestCase):
         out2, _ = ss.fetch_feed(src_always, CUTOFF, get_text=lambda url: xml)
         self.assertTrue(out2[0]["vendor_security_release"])
 
+    def test_every_branch_fixed_version_is_kept(self):
+        adv = {"ghsa_id": "GHSA-php", "cve_id": "CVE-2026-6000", "summary": "OOM", "published_at": "2026-10-22T01:00:00Z",
+               "cvss": {"score": 9.2}, "vulnerabilities": [
+                   {"package": {"ecosystem": "php", "name": "php-src"}, "vulnerable_version_range": f"< {v}", "patched_versions": v}
+                   for v in ("8.2.35", "8.3.36", "8.4.27", "8.5.12")]}
+        cands = ss.advisory_to_candidates(adv, {"name": "R", "product": "PHP"}, CUTOFF)
+        batches = w.group_batches(w.prefilter(cands, WATCH))
+        self.assertEqual(len(batches), 1)
+        self.assertEqual(batches[0]["fixed_in"], "8.2.35, 8.3.36, 8.4.27, 8.5.12")
+        self.assertIn("< 8.4.27", batches[0]["affected"])
+        # the LLM may now cite any branch, but not an invented one
+        b = batch(fixed_in=batches[0]["fixed_in"], affected=batches[0]["affected"])
+        good = {**GOOD, "impact": f"Branches below the listed versions are affected. {WORDS}", "action": "Update to 8.4.27, 8.3.36, 8.2.35 or 8.5.12."}
+        self.assertEqual(w.validate_summary(good, b), [])
+        self.assertTrue(any("numbers" in e for e in w.validate_summary({**good, "action": "Update to 8.4.99."}, b)))
+
+    def test_feed_body_is_fetched_and_url_upgraded_to_https(self):
+        rss = ("<rss><channel><item><title>October 2026 Security Releases</title><link>http://n.example/post</link>"
+               "<pubDate>Wed, 21 Oct 2026 08:00:00 GMT</pubDate></item></channel></rss>")
+        pages = {"https://n.example/post": "<html><body><p>Fixes CVE-2026-7001 (High) in 24.19.1.</p></body></html>"}
+        get = lambda url: rss if url == "u" else pages[url]
+        src = {"name": "Node.js", "url": "u", "product": "Node.js", "qualify": "always", "fetch_body": True}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=get)
+        self.assertEqual((out[0]["url"], out[0]["cve_ids"], out[0]["severity"]), ("https://n.example/post", ["CVE-2026-7001"], "high"))
+        self.assertIn("24.19.1", out[0]["summary"])
+
+    def test_feed_body_failure_keeps_the_entry(self):
+        rss = ("<rss><channel><item><title>Security Releases</title><link>https://n.example/post</link>"
+               "<pubDate>Wed, 21 Oct 2026 08:00:00 GMT</pubDate></item></channel></rss>")
+
+        def get(url):
+            if url == "u":
+                return rss
+            raise RuntimeError("down")
+        src = {"name": "Node.js", "url": "u", "product": "Node.js", "qualify": "always", "fetch_body": True}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=get)
+        self.assertEqual(len(out), 1)
+
+    def test_tag_without_cve_is_vulnerability(self):
+        text = w.render_item(batch(cve_ids=[], tag="#NodeJS"), {**GOOD, "headline": "Node.js security update"}, self_strings())
+        self.assertIn("`#NodeJS` `#Vulnerability`", text)
+
+    def test_version_at_the_end_of_a_sentence_is_still_checked(self):
+        self.assertEqual(w.VERSION_RE.findall("Update to 8.4.99. Then restart (156.0.1.2)."), ["8.4.99", "156.0.1.2"])
+        self.assertTrue(any("numbers" in e for e in w.validate_summary({**GOOD, "action": "Update to 9.9.9."}, batch())))
+
     def test_negated_in_the_wild_is_not_exploited(self):
         self.assertFalse(ss.exploited_in_wild("There are no reports of exploitation in the wild."))
         self.assertTrue(ss.exploited_in_wild("Google is aware that an exploit for CVE-2026-1 exists in the wild."))
@@ -388,5 +438,158 @@ class ReviewRegressionTests(unittest.TestCase):
         os.environ.pop("LLM_PROVIDER", None)
 
 
+class SourceFormatTests(unittest.TestCase):
+    CHROME = ("Stable Channel Update for Desktop 12 security fixes: "
+              "[$16000][1336266] High CVE-2022-2477 : Use after free in Guest View. Reported by anonymous on 2022-06-14 "
+              "[$500][1329541] Medium CVE-2022-4915: Inappropriate implementation in URL Formatting. Reported by A "
+              "[$7000][1308341] Critical CVE-2022-2163: Use after free in Cast UI. Reported by B "
+              "[$3000][1329987] Low CVE-2022-2479 : Insufficient validation in File. Reported by C")
+
+    def test_chrome_severity_lines_keep_critical_and_high_only(self):
+        got = ss.pick_severity_lines(self.CHROME)
+        self.assertEqual([(s, c) for s, c, _ in got["kept"]], [("Critical", "CVE-2022-2163"), ("High", "CVE-2022-2477")])
+        self.assertEqual((got["total"], got["severity"]), (4, "critical"))
+        self.assertEqual(ss.pick_severity_lines("no cve lines here")["severity"], None)
+
+    def test_chrome_feed_with_severity_lines_and_long_body(self):
+        xml = ("<feed xmlns='http://www.w3.org/2005/Atom'><entry><title>Stable Update</title>"
+               "<link rel='replies' href='http://c.example/c'/><link rel='alternate' href='http://c.example/p'/>"
+               "<updated>2026-10-21T08:00:00Z</updated><content>" + self.CHROME + "</content></entry></feed>")
+        src = {"name": "Chrome", "url": "u", "product": "Chrome", "pattern": r"CVE-\d{4}-\d{4,7}", "severity_lines": True,
+               "snippet_chars": 30000}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=lambda url: xml)
+        self.assertEqual((out[0]["cve_ids"], out[0]["severity"], out[0]["url"]),
+                         (["CVE-2022-2163", "CVE-2022-2477"], "critical", "https://c.example/p"))
+        self.assertNotIn("CVE-2022-4915", out[0]["summary"])
+        self.assertTrue(out[0]["vendor_security_release"])
+
+    def test_medium_low_only_chrome_post_does_not_qualify(self):
+        xml = ("<feed xmlns='http://www.w3.org/2005/Atom'><entry><title>Stable Update</title><link href='https://c.example/p'/>"
+               "<updated>2026-10-21T08:00:00Z</updated><content>[$1][2] Medium CVE-2026-1111: Bug. Reported by A</content></entry></feed>")
+        src = {"name": "Chrome", "url": "u", "product": "Chrome", "pattern": r"CVE-\d{4}-\d{4,7}", "severity_lines": True}
+        out, _ = ss.fetch_feed(src, CUTOFF, get_text=lambda url: xml)
+        self.assertEqual(w.prefilter(out, WATCH), [])
+
+    NODE_BODY = ("\n\nThis is a security release.\n\n### Notable Changes\n\n"
+                 "* (CVE-2026-106069, CVE-2026-106072) tls: reject non-canonical IP addresses (A B) \u2013 High\n"
+                 "* (CVE-2026-106070) zlib: avoid caching invalid ZIP local headers (C D) \u2013 Low\n"
+                 "* deps: update c-ares to 1.34.9 (Bot)\n\n### Commits\n")
+    NODE_LTS = ("This is a security release.\n\n### Notable Changes\n\n"
+                "* (CVE-2026-106069) tls: reject non-canonical IP addresses (A B)\n* deps: update undici (Bot)\n")
+
+    def test_node_notes_with_and_without_severity(self):
+        notes = ss.parse_node_security_notes(self.NODE_BODY)
+        self.assertEqual([(n[0], n[1]) for n in notes], [("High", ["CVE-2026-106069", "CVE-2026-106072"]), ("Low", ["CVE-2026-106070"])])
+        self.assertEqual(ss.parse_node_security_notes(self.NODE_LTS)[0][0], None)
+
+    def test_node_releases_become_one_batch_with_every_fixed_version(self):
+        rel = [{"tag_name": "v26.12.1", "published_at": "2026-10-21T10:00:00Z", "html_url": "https://github.com/nodejs/node/releases/tag/v26.12.1", "body": self.NODE_BODY},
+               {"tag_name": "v24.22.1", "published_at": "2026-10-21T10:00:00Z", "html_url": "https://github.com/nodejs/node/releases/tag/v24.22.1", "body": self.NODE_LTS},
+               {"tag_name": "v24.22.0", "published_at": "2026-10-14T10:00:00Z", "html_url": "x", "body": "regular release"},
+               {"tag_name": "v22.1.0", "published_at": "2026-10-21T10:00:00Z", "html_url": "y", "body": "regular release"}]
+        out, _ = ss.fetch_github_releases({"name": "Node", "repo": "nodejs/node", "product": "Node.js"}, CUTOFF, get=lambda url, h: rel)
+        self.assertEqual(len(out), 2)
+        batches = w.group_batches(w.prefilter(out, WATCH))
+        self.assertEqual((len(batches), batches[0]["fixed_in"], batches[0]["severity"]), (1, "26.12.1, 24.22.1", "high"))
+        self.assertIn("CVE-2026-106069", batches[0]["cve_ids"])
+
+    MFSA = ("announced: October 21, 2026\nimpact: high\nfixed_in:\n- Firefox 158.0.1\n- Firefox ESR 153.5.1\n"
+            "title: Security Vulnerabilities fixed in Firefox 158.0.1\ndescription: |\n  Note\nadvisories:\n"
+            "  CVE-2026-113399:\n    title: 'Use-after-free in the Widget component'\n    impact: high\n    reporter: X\n    bugs:\n      - url: 1\n"
+            "  CVE-2026-113400:\n    title: Minor flaw\n    impact: low\n    reporter: Y\n")
+
+    def test_mozilla_advisory_parse_and_fetch(self):
+        adv = ss.parse_mfsa(self.MFSA)
+        self.assertEqual((adv["impact"], adv["fixed_in"]), ("high", ["Firefox 158.0.1", "Firefox ESR 153.5.1"]))
+        self.assertEqual([(c[0], c[2]) for c in adv["cves"]], [("CVE-2026-113399", "high"), ("CVE-2026-113400", "low")])
+        listing = [{"name": "mfsa2026-100.yml"}, {"name": "mfsa2026-99.yml"}]
+        out, _ = ss.fetch_mozilla_advisories({"name": "Moz", "product": "Firefox"}, datetime(2026, 10, 20, tzinfo=timezone.utc),
+                                             get=lambda url, h: listing, get_text=lambda url: self.MFSA)
+        self.assertEqual(out[0]["cve_ids"], ["CVE-2026-113399"])
+        self.assertEqual(out[0]["url"], "https://www.mozilla.org/en-US/security/advisories/mfsa2026-99/")
+        self.assertEqual(len(w.prefilter(out, WATCH)), len(out))
+
+    def test_mozilla_non_firefox_and_old_advisories_are_skipped(self):
+        other = self.MFSA.replace("fixed in Firefox 158.0.1", "fixed in Thunderbird 150")
+        out, _ = ss.fetch_mozilla_advisories({"name": "Moz"}, datetime(2026, 10, 20, tzinfo=timezone.utc),
+                                             get=lambda url, h: [{"name": "mfsa2026-1.yml"}], get_text=lambda url: other)
+        self.assertEqual(out, [])
+        old, _ = ss.fetch_mozilla_advisories({"name": "Moz"}, datetime(2026, 11, 1, tzinfo=timezone.utc),
+                                             get=lambda url, h: [{"name": "mfsa2026-1.yml"}], get_text=lambda url: self.MFSA)
+        self.assertEqual(old, [])
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class HackerNewsSignalTests(unittest.TestCase):
+    HN = {"hits": [
+        {"objectID": "1", "title": "Chrome zero-day CVE-2026-0001 exploited", "url": "https://example.org/post",
+         "points": 120, "num_comments": 40, "created_at": "2026-10-22T05:00:00.000Z"},
+        {"objectID": "2", "title": "Unrelated vulnerability story", "url": "https://example.org/other",
+         "points": 55, "num_comments": 3, "created_at": "2026-10-22T06:00:00.000Z"}]}
+
+    def fetch(self):
+        src = {"name": "HN", "type": "hn-signal", "min_points": 30, "queries": ["q1", "q2"]}
+        return ss.fetch_hn_signals(src, CUTOFF, get=lambda url: self.HN)
+
+    def test_fetch_marks_signal_and_dedups_queries(self):
+        out, info = self.fetch()
+        self.assertEqual(len(out), 2)
+        self.assertTrue(all(c["signal"] for c in out))
+        self.assertEqual(out[0]["cve_ids"], ["CVE-2026-0001"])
+        self.assertEqual(out[0]["hn_url"], "https://news.ycombinator.com/item?id=1")
+
+    def test_attach_matches_by_cve_and_returns_unmatched(self):
+        signals, _ = self.fetch()
+        batch = {"cve_ids": ["CVE-2026-0001"], "url": "https://vendor.example/advisory"}
+        unmatched = w.attach_signals([batch], signals)
+        self.assertEqual(batch["hn_points"], 120)
+        self.assertEqual([s["id"] for s in unmatched], ["hn-2"])
+
+    def test_signal_never_becomes_an_item_and_does_not_leak_into_post(self):
+        signals, _ = self.fetch()
+        self.assertTrue(signals)
+        batch = {"cve_ids": [], "url": "https://vendor.example/a", "hn_points": 99, "hn_url": "https://news.ycombinator.com/item?id=9",
+                 "exploited": False, "tag": "#Chrome", "category": "BROWSER"}
+        item = {"headline": "H", "description": "D", "impact": "I", "action": "A"}
+        text = w.render_item(batch, item, {"impact": "Impact", "action": "Action"})
+        self.assertNotIn("ycombinator", text)
+
+    def test_signal_boosts_rank_within_same_tier(self):
+        a = {"tier": 3, "cvss": 8.0, "product": "A", "hn_points": 0}
+        b = {"tier": 3, "cvss": 8.0, "product": "B", "hn_points": 80}
+        ranked = sorted([a, b], key=lambda x: (x["tier"], -(x["cvss"] or 0), -x.get("hn_points", 0), x["product"]))
+        self.assertEqual(ranked[0]["product"], "B")
+
+
+class CombinedBulletinTests(unittest.TestCase):
+    def run_combined(self, **kw):
+        from app import main as m
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = m.run(dry_run=True, mock_file=str(Path(__file__).parent / "fixture.json"),
+                         with_security=True, security_mock=str(FIXTURE), **kw)
+        return code, out.getvalue()
+
+    def test_one_message_with_both_sections_and_at_most_seven_items(self):
+        code, text = self.run_combined()
+        self.assertEqual(code, 0)
+        self.assertEqual(text.count("*AI Engineering Daily:"), 1)
+        self.assertEqual(text.count("Cảnh báo bảo mật tech stack"), 1)
+        self.assertLessEqual(text.split("--- Ghi chú")[0].count("🔗"), 7)
+
+    def test_security_failure_does_not_block_ai_items(self):
+        from app import main as m
+        with mock.patch.object(m.websec, "prepare", side_effect=RuntimeError("boom")):
+            with self.assertRaises(m.RunError):
+                self.run_combined()
+        # the message was still built before the deferred error was raised (dry-run prints it)
+
+    def test_without_flag_nothing_changes(self):
+        from app import main as m
+        out = io.StringIO()
+        with redirect_stdout(out):
+            m.run(dry_run=True, mock_file=str(Path(__file__).parent / "fixture.json"))
+        self.assertNotIn("Cảnh báo bảo mật", out.getvalue())
