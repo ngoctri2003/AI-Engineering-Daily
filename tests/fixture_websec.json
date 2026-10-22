@@ -1,0 +1,118 @@
+{
+ "candidates": [
+  {
+   "id": "CVE-2026-1001",
+   "source": "fixture",
+   "title": "Chrome V8 type confusion",
+   "url": "https://example.com/chrome",
+   "published_at": "2026-10-22T00:00:00+00:00",
+   "summary": "Google reports an exploit exists in the wild. Fixed in 141.0.7390.122.",
+   "cve_ids": [
+    "CVE-2026-1001"
+   ],
+   "vendor": "",
+   "product": "",
+   "source_product": "Chrome",
+   "category": null,
+   "ecosystem": "",
+   "package": "",
+   "cvss": 8.8,
+   "severity": "high",
+   "in_kev": true,
+   "exploited": true,
+   "vendor_security_release": true,
+   "fixed_in": "141.0.7390.122",
+   "affected": ""
+  },
+  {
+   "id": "CVE-2026-1002",
+   "source": "fixture",
+   "title": "Next.js middleware bypass",
+   "url": "https://example.com/next",
+   "published_at": "2026-10-21T10:00:00+00:00",
+   "summary": "Authentication bypass in middleware.",
+   "cve_ids": [
+    "CVE-2026-1002"
+   ],
+   "vendor": "",
+   "product": "",
+   "source_product": "",
+   "category": null,
+   "ecosystem": "npm",
+   "package": "next",
+   "cvss": 9.1,
+   "severity": "critical",
+   "in_kev": false,
+   "exploited": false,
+   "vendor_security_release": false,
+   "fixed_in": "15.1.2",
+   "affected": "< 15.1.2"
+  },
+  {
+   "id": "CVE-2026-1003",
+   "source": "fixture",
+   "title": "Express open redirect",
+   "url": "https://example.com/express",
+   "published_at": "2026-10-21T11:00:00+00:00",
+   "summary": "Open redirect.",
+   "cve_ids": [
+    "CVE-2026-1003"
+   ],
+   "vendor": "",
+   "product": "",
+   "source_product": "",
+   "category": null,
+   "ecosystem": "npm",
+   "package": "express",
+   "cvss": 8.1,
+   "severity": "high",
+   "in_kev": false,
+   "exploited": false,
+   "vendor_security_release": false,
+   "fixed_in": "4.21.3",
+   "affected": ""
+  },
+  {
+   "id": "CVE-2026-1004",
+   "source": "fixture",
+   "title": "Low score flaw",
+   "url": "https://example.com/low",
+   "published_at": "2026-10-21T11:00:00+00:00",
+   "summary": "Minor.",
+   "cve_ids": [
+    "CVE-2026-1004"
+   ],
+   "vendor": "",
+   "product": "",
+   "source_product": "",
+   "category": null,
+   "ecosystem": "npm",
+   "package": "react",
+   "cvss": 5.0,
+   "severity": "medium",
+   "in_kev": false,
+   "exploited": false,
+   "vendor_security_release": false,
+   "fixed_in": "",
+   "affected": ""
+  }
+ ],
+ "llm_response": {
+  "items": [
+   {
+    "batch_id": "B1",
+    "headline": "Chrome V8 CVE-2026-1001 is exploited in the wild",
+    "description": "Google reports an exploit exists in the wild for a V8 type confusion flaw. detail detail detail detail detail detail detail detail detail detail detail detail detail detail",
+    "impact": "Chrome builds below 141.0.7390.122 are affected on every desktop platform. detail detail detail detail detail detail detail detail detail detail detail detail detail detail",
+    "action": "Update Chrome to 141.0.7390.122 and restart the browser."
+   },
+   {
+    "batch_id": "B3",
+    "headline": "Next.js middleware bypass CVE-2026-1002",
+    "description": "Authentication bypass in middleware. detail detail detail detail detail detail detail detail detail detail detail detail detail detail",
+    "impact": "Versions below 15.1.2 that guard routes in middleware are affected. detail detail detail detail detail detail detail detail detail detail detail detail detail detail",
+    "action": "Update next to 15.1.2."
+   }
+  ]
+ }
+}

@@ -1,0 +1,64 @@
+name: Tech Stack Security Daily
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: do not post to Slack"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # commit state/posted-websec.json (duplicate protection)
+
+# Same group as daily.yml: both workflows commit state files to the default branch, so they must not overlap.
+concurrency:
+  group: ai-eng-daily
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test
+        run: python -m unittest discover -s tests -v
+      - name: Run
+        timeout-minutes: 10
+        env:
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_FALLBACK_MODEL: ${{ vars.LLM_FALLBACK_MODEL }}
+          LLM_EFFORT: ${{ vars.LLM_EFFORT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C3C2EJATZ' }}
+          SLACK_ALLOWED_CHANNELS: ${{ vars.SLACK_ALLOWED_CHANNELS || 'C0C3C2EJATZ' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python -m app.main --profile websec --dry-run
+          else
+            python -m app.main --profile websec
+          fi
+      - name: Save duplicate-protection state
+        if: inputs.dry_run == false
+        run: |
+          git config user.name "ai-eng-daily-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add state/posted-websec.json || true
+          git diff --cached --quiet || (git commit -m "chore: update websec posted state [skip ci]" && git pull --rebase && git push)
+      - name: Alert on failure
+        if: failure() && inputs.dry_run == false
+        env:
+          BULLETIN_NAME: Tech Stack Security Daily
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_CHANNEL_ID || 'C0C3C2EJATZ' }}
+          ALERT_CHANNEL_ID: ${{ vars.ALERT_CHANNEL_ID || 'C0C5RGC88SX' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python -m app.alert

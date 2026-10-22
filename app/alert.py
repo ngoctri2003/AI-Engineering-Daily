@@ -38,7 +38,8 @@ def write_reason(text):
 def build_message(reason, run_url, now=None):
     now = now or datetime.now(timezone.utc)
     date_str = f"{now.astimezone(timezone(timedelta(hours=7))):%d/%m/%Y}"
-    lines = [f"*AI Engineering Daily: bản tin {date_str} chưa đăng được*"]
+    name = os.environ.get("BULLETIN_NAME", "AI Engineering Daily")
+    lines = [f"*{name}: bản tin {date_str} chưa đăng được*"]
     if reason:
         lines.append(f"Lý do: {reason}")
     else:

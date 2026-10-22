@@ -56,3 +56,13 @@ A small Vercel project sends a hand-written message (title + message) through th
 There is no password: anyone who can open the URL can post to the channel. Turn on Vercel Deployment Protection (Vercel Authentication) for the project so only your team can open it. Manual messages are not written to `state/posted.json`. Limits: title 150, message 3500 characters.
 
 The Activity section lists scheduled messages (`chat.scheduledMessages.list`, with a Cancel button) and recent messages posted by the bot (`conversations.history`, tagged Daily or Manual). Reading sent history needs the extra bot scope `channels:history` (public channel) or `groups:history` (private channel); reinstall the Slack app after adding it. Without it the Scheduled list still works and the page shows a warning. Slack is the only source of truth, so nothing is stored on Vercel.
+
+## Tech Stack Security Daily (profile `websec`, AO-72)
+A second bulletin on the same engine. It reports security issues that affect the company tech stack (browsers, Node.js/npm, PHP, WordPress, Atlassian Data Center, AWS) and is posted as its own message in the shared channel.
+- Run: `python -m app.main --profile websec [--dry-run] [--mock tests/fixture_websec.json]`. The default profile `ai-daily` is unchanged.
+- Code owns the decisions: `app/secsources.py` fetches CISA KEV, GitHub advisories (global and per repository) and vendor feeds, then fills CVSS from `cvelistV5`; `app/websec.py` filters (in KEV, exploited in the wild, or CVSS >= 8.0), matches `profiles/websec/watchlist.json`, groups one patch drop into one batch, and caps the output at 3 detailed items plus a one-line block. The LLM only writes the text of the selected batches.
+- Validation: the link, label, tags and CVE IDs come from the data, not from the LLM. Any CVE ID, version or score in the LLM text must appear in the batch data; an item that fails is degraded to a one-line entry. Already posted CVE IDs are stored in `state/posted-websec.json`.
+- No batch in the detailed tier means no post.
+- Files: `profiles/websec/{profile,watchlist,sources}.json`, `profiles/websec/rules.md` (draft, needs approval), workflow `.github/workflows/websec.yml` (manual trigger; scheduling is still to be decided).
+- Coverage today: browsers (Chrome feed, KEV), Node.js (feed, KEV), npm packages in the watchlist (GitHub advisories), Next.js, Express and PHP (repository advisories), everything else only through CISA KEV. WordPress, Java/Maven, Composer and AWS need dedicated sources and watchlist packages.
+- Not yet implemented: Mozilla, Apple and Atlassian HTML parsers, the weekly npm roundup, and the source-freshness alert to the alert channel (stale sources are only marked in the run log).
