@@ -17,9 +17,9 @@ HERE = Path(__file__).parent
 ROOT = HERE.parent
 STATE = ROOT / "state" / "posted.json"
 TZ_VN = timezone(timedelta(hours=7))
-MAX_ITEMS = 5
+MAX_ITEMS = 4
 SECURITY_OTHERS = 3  # one-line security entries under the detailed ones
-SECURITY_SLOTS = 2  # detailed security items in the combined bulletin (5 + 2 = 7 items at most)
+SECURITY_SLOTS = 3  # detailed security items in the combined bulletin (4 + 3 = 7 items at most)
 
 SCHEMA = """Trả về DUY NHẤT một object JSON:
 {
@@ -42,7 +42,7 @@ SCHEMA = """Trả về DUY NHẤT một object JSON:
   "dropped": [{"title": "...", "reason": "..."}],
   "conflicts": ["mô tả nguồn mâu thuẫn nếu có"]
 }
-Ràng buộc: tối đa 5 items, ưu tiên 3; mỗi item 50-80 từ (description + noteworthy + try + caution);
+Ràng buộc: tối đa 4 items, ưu tiên 3; mỗi item 50-80 từ (description + noteworthy + try + caution);
 chỉ dùng thông tin có trong dữ liệu ứng viên; không đủ tin giá trị thì items = [].
 Tin cộng đồng (kind=community, dev.to): tối đa 1 tin mỗi ngày, chỉ chọn khi là cuộc thảo luận nổi bật về nghề/kỹ thuật phần mềm với AI,
 viết rõ đây là quan điểm của tác giả bài viết ("Tác giả bài viết cho rằng..."), is_primary=false, source_kind="community".

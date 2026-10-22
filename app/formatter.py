@@ -123,6 +123,6 @@ def check_digest(text, extra_items=0, extra_others=0):
     n_links = text.count("🔗")
     if text.count(SEP) != n_links + extra_others:
         errs.append("số đường phân cách không khớp số tin")
-    if n_links - extra_items > 5:
-        errs.append("quá 5 tin")
+    if n_links - extra_items > 4:
+        errs.append("quá 4 tin")
     return errs
