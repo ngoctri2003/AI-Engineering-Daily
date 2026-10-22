@@ -36,13 +36,15 @@ SCHEMA = """Return ONLY one JSON object:
 Rules:
 - Write every text value in Vietnamese. Keep product names, CVE IDs and version numbers exactly as given.
 - Return one item per batch in the data, using the given batch_id. Do not add batches.
+- Write version numbers exactly as they appear in the data. Do not shorten or round them.
 - headline: what is affected and what happened, include the CVE ID when there is one.
 - description: 1-2 facts taken only from the batch data.
 - impact: one sentence on who is affected (versions, conditions) taken only from the batch data.
 - action: one concrete step, for example the fixed version to update to. If the data has no fixed version, say so.
 - description + impact + action together: 40-70 words. No emoji. No em dash.
 - Use only information present in the batch data. Never invent CVE IDs, version numbers, scores or links.
-- If the data is too thin to explain the issue, omit that batch."""
+- If the data is too thin for a full explanation, still return the item and say plainly what the data does not state;
+  keep to the 40-70 word range."""
 
 
 def load_json(path):
@@ -210,7 +212,8 @@ def validate_summary(item, batch):
         errs.append(f"CVE IDs not in source data: {unknown}")
     src = source_text(batch)
     known = set(VERSION_RE.findall(src))
-    bad_versions = [v for v in VERSION_RE.findall(text) if v not in known]
+    # A shorter branch such as "8.2" is fine when the data has "8.2.35" (match on a dot boundary only).
+    bad_versions = [v for v in VERSION_RE.findall(text) if v not in known and not any(k.startswith(v + ".") for k in known)]
     if bad_versions:
         errs.append(f"numbers not in source data: {bad_versions}")
     return errs
@@ -260,8 +263,18 @@ def check_digest(text, pairs, others):
     return errs
 
 
+def repair_prompt(item, batch, errs):
+    keys = ("batch_id", "product", "cve_ids", "cvss", "exploited", "in_kev", "title", "summary", "fixed_in", "affected")
+    return ("Fix the item below so it passes the listed errors. Keep the facts, use only the batch data, "
+            f"stay within 40-70 words for description + impact + action.\nErrors: {errs}\n"
+            f"Item: {json.dumps(item, ensure_ascii=False)}\n"
+            f"Batch data: {json.dumps({k: batch[k] for k in keys}, ensure_ascii=False)}\n"
+            "Return the corrected item as one JSON object with the same batch_id.")
+
+
 def summarize(detailed, now, system, mock_response=None, log=print):
-    """Ask the LLM to summarize the selected batches; invalid items degrade to one-line entries."""
+    """Ask the LLM to summarize the selected batches. An invalid item gets one repair request;
+    if it still fails (or the LLM omits the batch) the batch degrades to a one-line entry."""
     result = llm.call_json(system, build_user_prompt(detailed, now), mock_response)
     raw = result.get("items", []) if isinstance(result, dict) else []
     by_id = {b["batch_id"]: b for b in detailed}
@@ -275,11 +288,23 @@ def summarize(detailed, now, system, mock_response=None, log=print):
         seen.add(batch["batch_id"])
         errs = validate_summary(item, batch)
         if errs:
+            log(f"[validate] {batch['product']} ({batch['batch_id']}) failed: {'; '.join(errs)}; asking for one repair")
+            try:
+                fixed = formatter.unwrap_item(llm.call_json(system, repair_prompt(item, batch, errs), mock_response))
+                fixed["batch_id"] = batch["batch_id"]
+                errs = validate_summary(fixed, batch)
+                item = fixed
+            except Exception as ex:
+                log(f"[llm] repair request failed: {type(ex).__name__}: {ex}")
+        if errs:
             log(f"[validate] {batch['product']} ({batch['batch_id']}) degraded to one line: {'; '.join(errs)}")
             failed.append(batch)
         else:
             pairs.append((batch, item))
-    failed += [b for b in detailed if b["batch_id"] not in seen]
+    for b in detailed:
+        if b["batch_id"] not in seen:
+            log(f"[llm] {b['product']} ({b['batch_id']}) was omitted by the LLM, degraded to one line")
+            failed.append(b)
     return pairs, failed
 
 

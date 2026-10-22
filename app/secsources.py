@@ -153,7 +153,11 @@ def fetch_feed(src, cutoff, get_text=news_sources.http_get, **_):
             exploited=exploited_in_wild(text),
             severity="critical" if re.search(r"\bcritical\b", text, re.I) else (
                 "high" if re.search(r"\bhigh\b", text, re.I) else None),
-            vendor_security_release=True))
+            vendor_security_release=False))
+        c = out[-1]
+        # A feed set to "always" is a security release by nature. A pattern feed (Chrome) must also
+        # carry a critical or high hint, or an in-the-wild hint, so medium/low-only releases do not qualify.
+        c["vendor_security_release"] = src.get("qualify") == "always" or c["exploited"] or c["severity"] in ("critical", "high")
     return out, _info(len(out), newest)
 
 

@@ -50,6 +50,16 @@ def _text(el, *names):
     return None
 
 
+def _entry_link(entry, atom):
+    """Pick the entry page link. Atom entries may list several links (for example Blogger puts the
+    comments feed first, rel="replies"); prefer rel="alternate" or a link without rel."""
+    links = entry.findall(f"{atom}link")
+    for el in links:
+        if el.attrib.get("rel", "alternate") == "alternate" and el.attrib.get("href"):
+            return el
+    return links[0] if links else _text(entry, "link")
+
+
 def parse_feed(xml_text, src, cutoff):
     """Hỗ trợ Atom và RSS. Trả list ứng viên nằm trong cửa sổ cutoff."""
     root = ET.fromstring(xml_text)
@@ -58,7 +68,7 @@ def parse_feed(xml_text, src, cutoff):
     entries = root.findall(f".//{atom}entry") or root.findall(".//item")
     for e in entries:
         title = _text(e, f"{atom}title", "title")
-        link_el = _text(e, f"{atom}link", "link")
+        link_el = _entry_link(e, atom)
         link = ""
         if link_el is not None:
             link = link_el.attrib.get("href") or (link_el.text or "")
