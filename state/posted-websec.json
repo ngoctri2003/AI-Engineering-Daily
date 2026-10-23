@@ -68,7 +68,7 @@
         "GHSA-673q-mjm6-r5xr"
       ],
       "headline": "Next.js: Unauthenticated Remote Code Execution in `use cache` functions returning typed arrays",
-      "url": "https://github.com/advisories/GHSA-673q-mjm6-r5xr"
+      "url": "https://github.com/advisories/GHSA-673q-mjm6-r5xr "
     }
   ]
 }
