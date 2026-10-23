@@ -6,11 +6,13 @@ from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import manual  # noqa: E402
+from app import auth, manual  # noqa: E402
 
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if not auth.guard(self):  # signed-in users only; the reply is already sent
+            return
         try:
             length = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(min(length, 2000)) or b"{}")
