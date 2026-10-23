@@ -110,5 +110,14 @@
   "Scheduled message updated for {when}": "Đã cập nhật tin hẹn giờ, gửi vào {when}",
   "Updated": "Đã cập nhật",
   "A scheduled message needs a schedule time": "Tin hẹn giờ cần có thời gian gửi",
-  "The scheduled message no longer exists (already sent or cancelled)": "Tin hẹn giờ không còn tồn tại (đã gửi hoặc đã hủy)"
+  "The scheduled message no longer exists (already sent or cancelled)": "Tin hẹn giờ không còn tồn tại (đã gửi hoặc đã hủy)",
+  "Sign in": "Đăng nhập",
+  "Email": "Email",
+  "Password": "Mật khẩu",
+  "Sign out": "Đăng xuất",
+  "Wrong email or password": "Sai email hoặc mật khẩu",
+  "Login required": "Cần đăng nhập",
+  "Session expired, please sign in again": "Phiên đăng nhập đã hết hạn, hãy đăng nhập lại",
+  "Login is not configured on the server": "Máy chủ chưa được cấu hình đăng nhập",
+  "Request refused": "Yêu cầu bị từ chối"
 }

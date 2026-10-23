@@ -6,13 +6,15 @@ from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import manual  # noqa: E402
+from app import auth, manual  # noqa: E402
 
 MAX_REQUEST = 4_300_000  # stays under the 4.5 MB Vercel request body limit
 
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if not auth.guard(self):  # signed-in users only; the reply is already sent
+            return
         try:
             length = int(self.headers.get("Content-Length") or 0)
             if length > MAX_REQUEST:
