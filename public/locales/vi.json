@@ -89,5 +89,8 @@
   "Next": "Sau",
   "Close": "Đóng",
   "View": "Xem",
-  "Slack message": "Tin nhắn Slack"
+  "Slack message": "Tin nhắn Slack",
+  "Paste from ChatGPT or Claude keeps bold, links and lists. Use Ctrl + Shift + V to paste plain text.": "Dán từ ChatGPT hoặc Claude sẽ giữ chữ đậm, liên kết và danh sách. Dùng Ctrl + Shift + V để dán văn bản thuần.",
+  "Formatting converted to Slack style": "Đã chuyển định dạng sang kiểu Slack",
+  "Message is longer than 3500 characters": "Nội dung dài hơn 3500 ký tự"
 }

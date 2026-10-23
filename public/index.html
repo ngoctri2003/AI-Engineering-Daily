@@ -50,6 +50,7 @@
   .slack-msg .quote { border-left:4px solid var(--bs-border-color); padding-left:10px; color:var(--bs-secondary-color); }
   .slack-msg .mention { background:rgba(29,155,209,.13); color:#1264a3; border-radius:3px; padding:0 2px; }
   .slack-msg s { color:var(--bs-secondary-color); }
+  .slack-msg pre, .slack pre { background:var(--bs-tertiary-bg); border:1px solid var(--bs-border-color); border-radius:6px; padding:8px 10px; font-size:13px; white-space:pre-wrap; margin:4px 0; }
   dialog.msg-dlg { padding:0; max-width:640px; }
   .msg-dlg .inner { padding:20px 22px; }
   .msg-dlg .slack { border:0; padding:0; }
@@ -171,6 +172,7 @@
             <li><code>*bold*</code> <code>_italic_</code> <code>`code`</code> <code>&lt;https://url|label&gt;</code></li>
             <li data-i18n="The title is posted in bold above the message.">The title is posted in bold above the message.</li>
             <li data-i18n="Scheduled messages can be set 1 minute to 120 days ahead.">Scheduled messages can be set 1 minute to 120 days ahead.</li>
+            <li data-i18n="Paste from ChatGPT or Claude keeps bold, links and lists. Use Ctrl + Shift + V to paste plain text.">Paste from ChatGPT or Claude keeps bold, links and lists. Use Ctrl + Shift + V to paste plain text.</li>
             <li data-i18n="Up to 10 images, resized in your browser to about 3 MB in total. GIFs are sent as a still image.">Up to 10 images, resized in your browser to about 3 MB in total. GIFs are sent as a still image.</li>
           </ul>
         </div>
@@ -310,6 +312,7 @@
     const keep = (html) => "\u0000" + (stash.push(html) - 1) + "\u0000";
     const link = (url, label) => keep('<a href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">' + label + "</a>");
     let s = String(raw || "").replace(/\r/g, "");
+    s = s.replace(/```\n?([\s\S]*?)```/g, (all, c) => keep("<pre>" + esc(fromSlack ? decodeEnt(c) : c).replace(/\n$/, "") + "</pre>"));
     s = s.replace(/<([^<>\n]+)>/g, (all, inner) => {
       let m;
       if ((m = inner.match(/^(https?:\/\/[^|\s]+)(?:\|(.*))?$/))) {
@@ -372,6 +375,7 @@
     $("tcount").textContent = title.value.length + " / 150";
     $("count").textContent = text.value.length + " / 3500";
     $("count").classList.toggle("warn", text.value.length > 3300);
+    $("count").classList.toggle("text-danger", text.value.length > 3500);
     const ti = title.value.trim(), b = text.value.trim();
     preview.innerHTML = (ti || b)
       ? (ti ? '<div class="ln"><b>' + esc(ti) + '</b></div>' + (b ? '<div class="ln"><br></div>' : "") : "") + mrkdwn(b)
@@ -381,7 +385,7 @@
     summary.textContent = later ? (err || t("Will be sent on {when}", { when: fmt(d) })) : "";
     summary.classList.toggle("text-danger", !!(later && err && when.value));
     btn.textContent = busy ? btn.textContent : (later ? t("Schedule message") : t("Send now"));
-    btn.disabled = busy || !ti || !b || !!err;
+    btn.disabled = busy || !ti || !b || !!err || text.value.length > 3500;
   }
 
   function setMode(isLater) {
@@ -523,10 +527,102 @@
   $("linkBtn").addEventListener("click", insertLink);
   $("addImg").addEventListener("click", () => $("imgInput").click());
   $("imgInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  // ---- Paste: rich text (ChatGPT, Claude, web pages) to Slack mrkdwn. Ctrl + Shift + V pastes plain text. ----
+  function htmlToSlack(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html");  // inert: no scripts run, nothing is loaded
+    const SKIP = new Set(["script", "style", "button", "svg", "noscript", "template", "img", "head"]);
+    const markLines = (m, str) => str.split("\n").map((l) => {
+      const core = l.trim();
+      return core ? l.match(/^\s*/)[0] + m + core + m + l.match(/\s*$/)[0] : l;
+    }).join("\n");
+    const styleOf = (el) => {
+      const st = (el.getAttribute("style") || "").toLowerCase();
+      return { bold: /font-weight:\s*(bold|[6-9]00)/.test(st), italic: /font-style:\s*italic/.test(st), strike: /line-through/.test(st) };
+    };
+    const cellText = (el) => walk(el, { pre: false, depth: 0 }).replace(/\s+/g, " ").trim();
+    function walk(node, ctx) {
+      if (node.nodeType === 3) return ctx.pre ? node.nodeValue : node.nodeValue.replace(/\s+/g, " ");
+      if (node.nodeType !== 1) return "";
+      const tag = node.tagName.toLowerCase();
+      if (SKIP.has(tag)) return "";
+      const kids = (c) => Array.from(node.childNodes).map((n) => walk(n, c || ctx)).join("");
+      switch (tag) {
+        case "b": case "strong": return markLines("*", kids());
+        case "i": case "em": return markLines("_", kids());
+        case "s": case "del": case "strike": return markLines("~", kids());
+        case "code": { if (ctx.pre) return kids(); const c = kids().trim().replace(/`/g, "'"); return c ? "`" + c + "`" : ""; }
+        case "pre": {
+          const inner = Array.from(node.childNodes).map((n) => walk(n, { pre: true, depth: ctx.depth })).join("").replace(/\n+$/, "");
+          return "\n\n```\n" + inner + "\n```\n\n";
+        }
+        case "a": {
+          const href = node.getAttribute("href") || "";
+          const label = node.textContent.replace(/\s+/g, " ").replace(/[|<>]/g, " ").trim();
+          if (!/^https?:\/\//i.test(href)) return kids();
+          const safe = href.replace(/[|<>\s]/g, (ch) => encodeURIComponent(ch));
+          return !label || label === href ? "<" + safe + ">" : "<" + safe + "|" + label + ">";
+        }
+        case "br": return "\n";
+        case "hr": return "\n\n━━━━━━━━━━━━━━━━━━━━\n\n";
+        case "h1": case "h2": case "h3": case "h4": case "h5": case "h6": {
+          const h = kids().trim();
+          return h ? "\n\n" + markLines("*", h.replace(/\s+/g, " ")) + "\n\n" : "";
+        }
+        case "p": return "\n\n" + kids() + "\n\n";
+        case "div": case "section": case "article": case "header": case "footer": return "\n" + kids() + "\n";
+        case "ul": case "ol": {
+          const pad4 = "    ".repeat(ctx.depth);
+          let n = 0;
+          const items = Array.from(node.children).filter((c) => c.tagName.toLowerCase() === "li").map((li) => {
+            n++;
+            const inner = Array.from(li.childNodes).map((c) => walk(c, { pre: false, depth: ctx.depth + 1 })).join("")
+              .replace(/^\s+|\s+$/g, "").replace(/\n{2,}/g, "\n");
+            return pad4 + (tag === "ol" ? n + ". " : "• ") + inner;
+          });
+          return "\n" + items.join("\n") + "\n";
+        }
+        case "blockquote": {
+          const inner = kids().trim().replace(/\n{2,}/g, "\n");
+          return inner ? "\n\n" + inner.split("\n").map((l) => "> " + l).join("\n") + "\n\n" : "";
+        }
+        case "table": {
+          const rows = Array.from(node.querySelectorAll("tr")).map((tr) => {
+            const head = Array.from(tr.children).every((c) => c.tagName.toLowerCase() === "th");
+            const cells = Array.from(tr.children).map((c) => cellText(c));
+            return head ? cells.map((c) => (c ? "*" + c + "*" : c)).join(" | ") : cells.join(" | ");
+          });
+          return "\n\n" + rows.join("\n") + "\n\n";
+        }
+        case "span": {
+          const st = styleOf(node);
+          let r = kids();
+          if (st.bold) r = markLines("*", r);
+          if (st.italic) r = markLines("_", r);
+          if (st.strike) r = markLines("~", r);
+          return r;
+        }
+        default: return kids();
+      }
+    }
+    return walk(doc.body, { pre: false, depth: 0 })
+      .replace(/ /g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
   text.addEventListener("paste", (e) => {
     const cd = e.clipboardData;
-    const fs = cd ? Array.from(cd.files).filter((f) => f.type.startsWith("image/")) : [];
-    if (fs.length && !cd.getData("text")) { e.preventDefault(); addFiles(fs); }
+    if (!cd) return;
+    const fs = Array.from(cd.files).filter((f) => f.type.startsWith("image/"));
+    if (fs.length && !cd.getData("text")) { e.preventDefault(); addFiles(fs); return; }
+    const html = cd.getData("text/html");
+    if (!html) return;
+    let md = "";
+    try { md = htmlToSlack(html); } catch (err) { md = ""; }
+    if (!md) return;  // fall back to the browser's plain-text paste
+    e.preventDefault();
+    const s0 = text.selectionStart, e0 = text.selectionEnd;
+    text.setRangeText(md, s0, e0, "end");
+    text.dispatchEvent(new Event("input"));
+    if (/<(b|strong|i|em|a|ul|ol|li|h[1-6]|code|pre|blockquote|table|s|del)\b/i.test(html)) showToast(t("Formatting converted to Slack style"));
+    if (text.value.length > 3500) showToast(t("Message is longer than 3500 characters"), true);
   });
   ["dragenter", "dragover"].forEach((ev) => $("drop").addEventListener(ev, (e) => { e.preventDefault(); $("drop").classList.add("over"); }));
   ["dragleave", "drop"].forEach((ev) => $("drop").addEventListener(ev, (e) => {
