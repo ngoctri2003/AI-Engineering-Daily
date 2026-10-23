@@ -179,6 +179,16 @@
       "date": "2026-10-22T16:38:25.235279+00:00",
       "headline": "JetBrains Air Governance chính thức GA, quản lý AI agent, model, provider và hạn mức chi tiêu",
       "url": "https://blog.jetbrains.com/blog/2026/10/22/air-governance-manage-ai-agents-access-and-spend-throughout-your-organization/"
+    },
+    {
+      "date": "2026-10-23T01:30:19.238123+00:00",
+      "headline": "Claude Code v2.1.309 vá nhiều lỗi sandbox và permission của Bash, không cho sửa file MCP config qua auto-accept",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.309"
+    },
+    {
+      "date": "2026-10-23T01:30:19.238123+00:00",
+      "headline": "GitHub Copilot usage metrics API hiển thị theo tên skills, custom agents và MCP server của tổ chức",
+      "url": "https://github.blog/changelog/2026-10-22-custom-skills-agents-and-mcp-servers-in-usage-metrics-api"
     }
   ]
 }
