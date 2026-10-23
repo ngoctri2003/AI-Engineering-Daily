@@ -39,11 +39,20 @@
   .pimgs img { max-width:100%; max-height:200px; border-radius:8px; border:1px solid var(--bs-border-color); align-self:flex-start; }
   .empty { color:var(--bs-secondary-color); font-style:italic; }
   /* lists */
-  .post-item { cursor:pointer; }
+  .post-row { cursor:pointer; }
   .post-title { font-weight:700; overflow-wrap:anywhere; }
-  .post-body { color:var(--bs-secondary-color); font-size:14px; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .post-item.open .post-body { display:block; white-space:pre-wrap; overflow:visible; }
-  .post-meta { flex:none; text-align:right; font-size:13px; color:var(--bs-secondary-color); }
+  .post-snippet { color:var(--bs-secondary-color); font-size:13px; max-width:520px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ln { min-height:1.4em; }
+  .slack-msg { font-family:"Lato", system-ui, -apple-system, "Segoe UI", sans-serif; font-size:15px; line-height:1.4667; word-break:break-word; }
+  .slack-msg a { color:#1264a3; text-decoration:none; }
+  .slack-msg a:hover { text-decoration:underline; }
+  .slack-msg hr { border-top:1px solid var(--bs-border-color); opacity:1; }
+  .slack-msg .quote { border-left:4px solid var(--bs-border-color); padding-left:10px; color:var(--bs-secondary-color); }
+  .slack-msg .mention { background:rgba(29,155,209,.13); color:#1264a3; border-radius:3px; padding:0 2px; }
+  .slack-msg s { color:var(--bs-secondary-color); }
+  dialog.msg-dlg { padding:0; max-width:640px; }
+  .msg-dlg .inner { padding:20px 22px; }
+  .msg-dlg .slack { border:0; padding:0; }
   /* dialog + toast */
   dialog { border:1px solid var(--bs-border-color); border-radius:14px; background:var(--bs-body-bg); color:var(--bs-body-color); padding:22px; max-width:440px; width:calc(100% - 32px); box-shadow:0 20px 60px rgba(0,0,0,.35); }
   dialog::backdrop { background:rgba(10,12,16,.55); }
@@ -181,16 +190,39 @@
     </div>
 
     <div class="card shadow-sm mb-4">
-      <div class="card-header bg-transparent fw-bold"><i class="bi bi-check2-circle me-1 text-success"></i><span data-i18n="Posted">Posted</span> <span class="badge text-bg-secondary" id="nSent">0</span></div>
+      <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="fw-bold"><i class="bi bi-check2-circle me-1 text-success"></i><span data-i18n="Posted">Posted</span> <span class="badge text-bg-secondary" id="nSent">0</span></div>
+        <div class="small text-secondary" data-i18n="Click a row to see the message as it appears in Slack.">Click a row to see the message as it appears in Slack.</div>
+      </div>
       <div id="warnSent" class="alert alert-warning small m-3 mb-0" hidden></div>
-      <ul id="listSent" class="list-group list-group-flush"></ul>
-      <div class="card-footer bg-transparent small text-secondary" data-i18n="Click a message to see the full text.">Click a message to see the full text.</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr>
+            <th data-i18n="Title">Title</th><th data-i18n="Type">Type</th><th data-i18n="Time">Time</th><th data-i18n="Images">Images</th><th></th>
+          </tr></thead>
+          <tbody id="sentBody"></tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 small text-secondary">
+          <span id="pageInfo"></span>
+          <select id="pageSize" class="form-select form-select-sm w-auto" aria-label="Rows per page" data-i18n-title="Rows per page" title="Rows per page">
+            <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+          </select>
+        </div>
+        <nav aria-label="Pagination"><ul class="pagination pagination-sm mb-0" id="pager"></ul></nav>
+      </div>
     </div>
 
     <div class="card shadow-sm">
       <div class="card-header bg-transparent fw-bold"><i class="bi bi-calendar-event me-1 text-primary"></i><span data-i18n="Scheduled">Scheduled</span> <span class="badge text-bg-secondary" id="nSched">0</span></div>
       <div id="warnSched" class="alert alert-warning small m-3 mb-0" hidden></div>
-      <ul id="listSched" class="list-group list-group-flush"></ul>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th data-i18n="Title">Title</th><th data-i18n="Time">Time</th><th></th></tr></thead>
+          <tbody id="schedBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -201,6 +233,28 @@
   <div class="d-flex justify-content-end gap-2 mt-4">
     <button type="button" class="btn btn-outline-secondary" id="dlgCancel" data-i18n="Back">Back</button>
     <button type="button" class="btn btn-primary" id="dlgOk"></button>
+  </div>
+</dialog>
+<dialog id="msgDlg" class="msg-dlg">
+  <div class="inner">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="text-uppercase fw-bold text-secondary small" data-i18n="Slack message">Slack message</span>
+      <button type="button" class="btn-close" id="mdX" aria-label="Close"></button>
+    </div>
+    <div class="slack">
+      <div class="d-flex gap-2">
+        <div class="avatar">AI</div>
+        <div style="min-width:0;flex:1">
+          <div class="fw-bold">AI Engineering Daily <span class="badge text-bg-secondary fw-normal">APP</span> <small class="text-secondary fw-normal ms-1" id="mdStamp"></small></div>
+          <div class="slack-msg" id="mdBody"></div>
+          <div class="small text-secondary mt-2" id="mdImages" hidden></div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a class="btn btn-outline-primary btn-sm" id="mdLink" target="_blank" rel="noopener noreferrer" hidden><i class="bi bi-box-arrow-up-right me-1"></i><span data-i18n="Open in Slack">Open in Slack</span></a>
+      <button type="button" class="btn btn-secondary btn-sm" id="mdClose" data-i18n="Close">Close</button>
+    </div>
   </div>
 </dialog>
 <div id="toast" role="status"></div>
@@ -246,15 +300,47 @@
   const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  // Escape first, then apply the Slack mrkdwn subset on the escaped text.
-  function mrkdwn(s) {
-    return esc(s)
-      .replace(/&lt;(https?:\/\/[^|&]+?)\|([^&]+?)&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>')
-      .replace(/&lt;(https?:\/\/[^&]+?)&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
-      .replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, "$1<b>$2</b>")
-      .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g, "$1<i>$2</i>");
+  const escAttr = (s) => esc(s).replace(/"/g, "&quot;");
+  const decodeEnt = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+  // Slack mrkdwn to safe HTML. Text is escaped first; tokens are stashed so formatting cannot touch them.
+  // fromSlack: text came from the Slack API (entities &amp; &lt; &gt; are decoded first).
+  function slackHtml(raw, fromSlack) {
+    const stash = [];
+    const keep = (html) => "\u0000" + (stash.push(html) - 1) + "\u0000";
+    const link = (url, label) => keep('<a href="' + escAttr(url) + '" target="_blank" rel="noopener noreferrer">' + label + "</a>");
+    let s = String(raw || "").replace(/\r/g, "");
+    s = s.replace(/<([^<>\n]+)>/g, (all, inner) => {
+      let m;
+      if ((m = inner.match(/^(https?:\/\/[^|\s]+)(?:\|(.*))?$/))) {
+        const url = fromSlack ? decodeEnt(m[1]) : m[1];
+        return link(url, esc(fromSlack && m[2] ? decodeEnt(m[2]) : (m[2] || url)));
+      }
+      if ((m = inner.match(/^@[UW][A-Z0-9]+(?:\|(.*))?$/))) return keep('<span class="mention">@' + esc(m[1] || "user") + "</span>");
+      if ((m = inner.match(/^#C[A-Z0-9]+(?:\|(.*))?$/))) return keep('<span class="mention">#' + esc(m[1] || "channel") + "</span>");
+      if ((m = inner.match(/^!(here|channel|everyone)/))) return keep('<span class="mention">@' + m[1] + "</span>");
+      return all;
+    });
+    if (fromSlack) s = decodeEnt(s);
+    s = esc(s);
+    s = s.replace(/(^|[\s(])(https?:\/\/[^\s]+)/g, (all, pre, url) => {
+      const m = url.match(/^(.*?)([.,!?:;)]*)$/);
+      return pre + link(decodeEnt(m[1]), m[1]) + m[2];
+    });
+    s = s.replace(/`([^`\n]+)`/g, (all, c) => keep("<code>" + c + "</code>"));
+    s = s.replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, "$1<b>$2</b>")
+         .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g, "$1<i>$2</i>")
+         .replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s).,!?:;])/g, "$1<s>$2</s>");
+    const restore = (h) => { while (/\u0000\d+\u0000/.test(h)) h = h.replace(/\u0000(\d+)\u0000/g, (a, i) => stash[i]); return h; };
+    return s.split("\n").map((line) => {
+      const plain = line.trim();
+      if (/^━{3,}$/.test(plain) || /^[-—─]{5,}$/.test(plain)) return '<hr class="my-2">';
+      if (!plain) return '<div class="ln"><br></div>';
+      if (/^&gt;\s?/.test(plain)) return '<div class="ln quote">' + restore(plain.replace(/^&gt;\s?/, "")) + "</div>";
+      return '<div class="ln">' + restore(line) + "</div>";
+    }).join("");
   }
+  const mrkdwn = (s) => slackHtml(s, false);
 
   // ---- Tabs ----
   function showTab(name) {
@@ -288,7 +374,7 @@
     $("count").classList.toggle("warn", text.value.length > 3300);
     const ti = title.value.trim(), b = text.value.trim();
     preview.innerHTML = (ti || b)
-      ? (ti ? "<b>" + esc(ti) + "</b>" + (b ? "\n\n" : "") : "") + mrkdwn(b)
+      ? (ti ? '<div class="ln"><b>' + esc(ti) + '</b></div>' + (b ? '<div class="ln"><br></div>' : "") : "") + mrkdwn(b)
       : '<span class="empty">' + esc(t("Your message will appear here")) + "</span>";
     const d = scheduledAt(), err = scheduleError();
     $("stamp").textContent = later && d ? t("scheduled {when}", { when: fmt(d) }) : t("now");
@@ -470,26 +556,68 @@
   function badge(cls, label) {
     const s = document.createElement("span"); s.className = "badge rounded-pill " + cls; s.textContent = label; return s;
   }
-  function fill(ul, rows, emptyText, build) {
-    ul.textContent = "";
-    if (!rows.length) {
-      const li = document.createElement("li"); li.className = "list-group-item text-center text-secondary py-4"; li.textContent = emptyText;
-      ul.appendChild(li); return;
-    }
-    rows.forEach((m) => {
-      const { title: ti, body } = split(m.text);
-      const li = document.createElement("li"); li.className = "list-group-item post-item d-flex gap-3 justify-content-between align-items-start"; li.tabIndex = 0;
-      const main = document.createElement("div"); main.style.minWidth = "0"; main.style.flex = "1";
-      const h = document.createElement("div"); h.className = "post-title"; h.textContent = ti;
-      const p = document.createElement("div"); p.className = "post-body"; p.textContent = body;
-      main.append(h, p);
-      const meta = document.createElement("div"); meta.className = "post-meta d-flex flex-column align-items-end gap-1";
-      build(m, ti, meta);
-      li.append(main, meta); ul.appendChild(li);
-      const toggle = () => li.classList.toggle("open");
-      li.addEventListener("click", (e) => { if (!e.target.closest("button, a")) toggle(); });
-      li.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === li) toggle(); });
-    });
+  let page = 1, pageSize = 10;
+  const msgDlg = $("msgDlg");
+  function td(content, cls) {
+    const c = document.createElement("td"); if (cls) c.className = cls;
+    if (content instanceof Node) c.append(content); else c.textContent = content == null ? "" : String(content);
+    return c;
+  }
+  // One-line plain text for the table: drop Slack formatting marks, keep link labels.
+  function plainText(raw) {
+    return decodeEnt(String(raw || ""))
+      .replace(/<(https?:\/\/[^|>\s]+)\|([^>]*)>/g, "$2").replace(/<(https?:\/\/[^>\s]+)>/g, "$1")
+      .replace(/(^|[\s(])([*_~`])(\S(?:[^\n]*?\S)?)\2(?=$|[\s).,!?:;])/g, "$1$3")
+      .replace(/^>\s?/gm, "").replace(/\s+/g, " ").trim();
+  }
+  function titleCell(m) {
+    const { title: ti, body } = split(m.text);
+    const box = document.createElement("div"); box.style.minWidth = "0";
+    const h = document.createElement("div"); h.className = "post-title"; h.textContent = ti;
+    const p = document.createElement("div"); p.className = "post-snippet"; p.textContent = plainText(body);
+    box.append(h, p); return box;
+  }
+  function emptyRow(tb, cols, text) {
+    const tr = document.createElement("tr"); const c = td(text, "text-center text-secondary py-4"); c.colSpan = cols;
+    tr.append(c); tb.append(tr);
+  }
+  function openMessage(m, kind) {
+    const at = kind === "sched" ? new Date(m.post_at * 1000) : new Date(parseFloat(m.ts) * 1000);
+    $("mdStamp").textContent = kind === "sched" ? t("scheduled {when}", { when: fmt(at) }) : fmt(at);
+    $("mdBody").innerHTML = slackHtml(m.text, true);
+    $("mdImages").hidden = !m.images;
+    $("mdImages").textContent = m.images ? t("{n} image(s)", { n: m.images }) : "";
+    $("mdLink").hidden = !m.link; if (m.link) $("mdLink").href = m.link;
+    msgDlg.showModal();
+  }
+  function rowOpens(tr, m, kind) {
+    tr.classList.add("post-row"); tr.tabIndex = 0;
+    tr.addEventListener("click", (e) => { if (!e.target.closest("button, a")) openMessage(m, kind); });
+    tr.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === tr) openMessage(m, kind); });
+  }
+  function pageList(cur, total) {
+    const set = new Set([1, total, cur - 1, cur, cur + 1].filter((n) => n >= 1 && n <= total));
+    const out = []; let prev = 0;
+    [...set].sort((a, b) => a - b).forEach((n) => { if (n - prev > 1) out.push("…"); out.push(n); prev = n; });
+    return out;
+  }
+  function renderPager(total) {
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    page = Math.min(Math.max(page, 1), pages);
+    const from = total ? (page - 1) * pageSize + 1 : 0, to = Math.min(total, page * pageSize);
+    $("pageInfo").textContent = t("Showing {from}-{to} of {total}", { from, to, total });
+    const ul = $("pager"); ul.textContent = "";
+    const item = (label, target, opts) => {
+      const li = document.createElement("li"); li.className = "page-item" + (opts && opts.active ? " active" : "") + (opts && opts.disabled ? " disabled" : "");
+      const b = document.createElement("button"); b.type = "button"; b.className = "page-link"; b.textContent = label;
+      if (opts && opts.disabled) b.disabled = true;
+      else if (target) b.addEventListener("click", () => { page = target; renderList(); });
+      li.append(b); ul.append(li);
+    };
+    item(t("Previous"), page - 1, { disabled: page <= 1 });
+    pageList(page, pages).forEach((n) => (n === "…" ? item("…", 0, { disabled: true }) : item(String(n), n, { active: n === page })));
+    item(t("Next"), page + 1, { disabled: page >= pages });
+    $("pager").parentElement.hidden = pages <= 1;
   }
   function warnFor(prefix) { return data.warnings.filter((w) => w.startsWith(prefix)).map((w) => t(w)).join(" | "); }
   function renderList() {
@@ -504,25 +632,36 @@
       const w = $(id), msg = warnFor(pre);
       if (msg) { w.textContent = msg; w.hidden = false; } else if (pre !== "Could not") w.hidden = true;
     });
-    fill($("listSent"), sent, t("No posted messages found"), (m, ti, meta) => {
-      meta.append(badge(isDaily(ti) ? "text-bg-info" : "text-bg-secondary", isDaily(ti) ? t("Daily") : t("Manual")));
-      const w = document.createElement("div"); w.textContent = fmt(new Date(parseFloat(m.ts) * 1000)); meta.append(w);
-      if (m.images) {
-        const im = document.createElement("div");
-        im.innerHTML = '<i class="bi bi-image me-1"></i>'; im.append(t("{n} image(s)", { n: m.images })); meta.append(im);
-      }
+
+    renderPager(sent.length);
+    const tb = $("sentBody"); tb.textContent = "";
+    if (!sent.length) emptyRow(tb, 5, t("No posted messages found"));
+    sent.slice((page - 1) * pageSize, page * pageSize).forEach((m) => {
+      const ti = split(m.text).title, tr = document.createElement("tr");
+      const act = document.createElement("div"); act.className = "d-flex justify-content-end gap-2 align-items-center";
+      const eye = document.createElement("button"); eye.type = "button"; eye.className = "btn btn-outline-primary btn-sm";
+      eye.innerHTML = '<i class="bi bi-eye"></i>'; eye.title = t("View"); eye.addEventListener("click", () => openMessage(m, "sent"));
+      act.append(eye);
       if (m.link) {
         const a = document.createElement("a"); a.href = m.link; a.target = "_blank"; a.rel = "noopener noreferrer";
-        a.textContent = t("Open in Slack"); meta.append(a);
+        a.className = "btn btn-outline-secondary btn-sm"; a.title = t("Open in Slack"); a.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>'; act.append(a);
       }
+      tr.append(td(titleCell(m)), td(badge(isDaily(ti) ? "text-bg-info" : "text-bg-secondary", isDaily(ti) ? t("Daily") : t("Manual"))),
+        td(fmt(new Date(parseFloat(m.ts) * 1000)), "text-nowrap small"),
+        td(m.images ? t("{n} image(s)", { n: m.images }) : "—", "text-nowrap small"), td(act));
+      rowOpens(tr, m, "sent"); tb.append(tr);
     });
-    fill($("listSched"), data.scheduled, t("No scheduled messages"), (m, ti, meta) => {
-      meta.append(badge("text-bg-primary", t("Scheduled")));
-      const w = document.createElement("div"); w.textContent = fmt(new Date(m.post_at * 1000)); meta.append(w);
+
+    const sb = $("schedBody"); sb.textContent = "";
+    if (!data.scheduled.length) emptyRow(sb, 3, t("No scheduled messages"));
+    data.scheduled.forEach((m) => {
+      const ti = split(m.text).title, tr = document.createElement("tr");
       const c = document.createElement("button");
       c.type = "button"; c.className = "btn btn-outline-danger btn-sm"; c.textContent = t("Cancel");
       c.addEventListener("click", () => askCancel(m, ti));
-      meta.append(c);
+      const act = document.createElement("div"); act.className = "text-end"; act.append(c);
+      tr.append(td(titleCell(m)), td(fmt(new Date(m.post_at * 1000)), "text-nowrap small"), td(act));
+      rowOpens(tr, m, "sched"); sb.append(tr);
     });
   }
   async function loadActivity() {
@@ -546,8 +685,12 @@
       });
   }
   $("refresh").addEventListener("click", loadActivity);
+  $("pageSize").addEventListener("change", (e) => { pageSize = parseInt(e.target.value, 10) || 10; page = 1; renderList(); });
+  $("mdX").addEventListener("click", () => msgDlg.close());
+  $("mdClose").addEventListener("click", () => msgDlg.close());
+  msgDlg.addEventListener("click", (e) => { if (e.target === msgDlg) msgDlg.close(); });
   document.querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => {
-    filter = b.dataset.filter;
+    filter = b.dataset.filter; page = 1;
     document.querySelectorAll("[data-filter]").forEach((x) => { x.className = "btn " + (x === b ? "btn-primary" : "btn-outline-primary"); });
     renderList();
   }));

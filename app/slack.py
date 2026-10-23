@@ -158,7 +158,7 @@ def list_scheduled():
             for m in res.get("scheduled_messages", [])]
 
 
-def list_sent(limit=50):
+def list_sent(limit=100):
     """Recent messages posted by this bot in the configured channel (needs channels:history or groups:history)."""
     token, channel = _config()
     who = _get("auth.test", {}, token)

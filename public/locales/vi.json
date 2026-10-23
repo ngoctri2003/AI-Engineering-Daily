@@ -32,7 +32,6 @@
   "Manual": "Thủ công",
   "Refresh": "Làm mới",
   "Posted": "Đã đăng",
-  "Click a message to see the full text.": "Bấm vào một tin để xem đầy đủ nội dung.",
   "Back": "Quay lại",
   "Pick a date and time": "Hãy chọn ngày và giờ",
   "Time must be at least 1 minute from now": "Thời gian phải cách hiện tại ít nhất 1 phút",
@@ -80,5 +79,15 @@
   "Invalid request body": "Dữ liệu gửi lên không hợp lệ",
   "Invalid schedule time": "Thời gian hẹn giờ không hợp lệ",
   "Schedule time must be at least 1 minute in the future": "Thời gian hẹn giờ phải cách hiện tại ít nhất 1 phút",
-  "Schedule time must be within 120 days": "Thời gian hẹn giờ phải nằm trong vòng 120 ngày"
+  "Schedule time must be within 120 days": "Thời gian hẹn giờ phải nằm trong vòng 120 ngày",
+  "Click a row to see the message as it appears in Slack.": "Bấm vào một dòng để xem tin như hiển thị trên Slack.",
+  "Type": "Loại",
+  "Time": "Thời gian",
+  "Rows per page": "Số dòng mỗi trang",
+  "Showing {from}-{to} of {total}": "Hiển thị {from}-{to} trong {total}",
+  "Previous": "Trước",
+  "Next": "Sau",
+  "Close": "Đóng",
+  "View": "Xem",
+  "Slack message": "Tin nhắn Slack"
 }
