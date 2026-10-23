@@ -100,6 +100,16 @@
     <div class="col-lg-7">
       <div class="card shadow-sm">
         <div class="card-body p-4">
+          <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2 small" id="editBar" hidden>
+            <span><i class="bi bi-pencil me-1"></i><span data-i18n="Editing a scheduled message. Saving replaces the original. Images of the original are not kept, add them again if needed.">Editing a scheduled message. Saving replaces the original. Images of the original are not kept, add them again if needed.</span></span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="editCancel" data-i18n="Stop editing">Stop editing</button>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="channel" data-i18n="Channel">Channel</label>
+            <select id="channel" class="form-select" disabled></select>
+            <div class="form-text text-warning-emphasis" id="warnChannel" hidden></div>
+          </div>
+
           <div class="mb-3">
             <div class="d-flex justify-content-between"><label class="form-label fw-semibold" for="title" data-i18n="Title">Title</label><span class="count" id="tcount">0 / 150</span></div>
             <input id="title" class="form-control" type="text" maxlength="150" autocomplete="off" data-i18n-ph="e.g. Maintenance tonight at 22:00" placeholder="e.g. Maintenance tonight at 22:00">
@@ -163,6 +173,7 @@
               <div class="avatar">AI</div>
               <div style="min-width:0;flex:1">
                 <div class="fw-bold">AI Engineering Daily <small class="text-secondary fw-normal ms-1" id="stamp"></small></div>
+                <div class="small text-secondary" id="pvChannel"></div>
                 <div class="msg" id="preview"></div>
                 <div class="pimgs" id="pimgs"></div>
               </div>
@@ -188,7 +199,11 @@
         <button type="button" class="btn btn-outline-primary" data-filter="daily" data-i18n="Daily">Daily</button>
         <button type="button" class="btn btn-outline-primary" data-filter="manual" data-i18n="Manual">Manual</button>
       </div>
-      <button type="button" class="btn btn-outline-secondary btn-sm" id="refresh"><i class="bi bi-arrow-clockwise me-1"></i><span data-i18n="Refresh">Refresh</span></button>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <label class="small text-secondary mb-0" for="viewChannel" data-i18n="Channel">Channel</label>
+        <select id="viewChannel" class="form-select form-select-sm w-auto" style="max-width:240px" disabled></select>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="refresh"><i class="bi bi-arrow-clockwise me-1"></i><span data-i18n="Refresh">Refresh</span></button>
+      </div>
     </div>
 
     <div class="card shadow-sm mb-4">
@@ -269,6 +284,9 @@
   let data = { scheduled: [], sent: [], warnings: [] };
   const MAX_IMAGES = 10, IMAGE_BUDGET = 2800000;
   let images = [];
+  // Channels the bot is a member of. channelId "" means the server default (SLACK_CHANNEL_ID), used when the list can't be loaded.
+  let channels = [], channelId = "", channelsReady = false;
+  let editing = null;  // { id, channel } while a scheduled message is being edited; saving replaces it
 
   // ---- i18n: source strings are English; other languages come from /locales/<lang>.json (key = English text) ----
   let LANG = "vi", dict = {};
@@ -286,7 +304,7 @@
       b.classList.toggle("btn-secondary", b.dataset.lang === LANG);
       b.classList.toggle("btn-outline-secondary", b.dataset.lang !== LANG);
     });
-    refresh(); renderList(); renderImages();
+    renderChannels(); refresh(); renderList(); renderImages();
   }
   async function setLang(lang) {
     LANG = lang; dict = {};
@@ -382,10 +400,50 @@
       : '<span class="empty">' + esc(t("Your message will appear here")) + "</span>";
     const d = scheduledAt(), err = scheduleError();
     $("stamp").textContent = later && d ? t("scheduled {when}", { when: fmt(d) }) : t("now");
+    $("pvChannel").textContent = t("To {channel}", { channel: channelLabel() });
     summary.textContent = later ? (err || t("Will be sent on {when}", { when: fmt(d) })) : "";
     summary.classList.toggle("text-danger", !!(later && err && when.value));
-    btn.textContent = busy ? btn.textContent : (later ? t("Schedule message") : t("Send now"));
-    btn.disabled = busy || !ti || !b || !!err || text.value.length > 3500;
+    $("editBar").hidden = !editing; $("modeNow").disabled = !!editing;
+    btn.textContent = busy ? btn.textContent : (editing ? t("Save changes") : later ? t("Schedule message") : t("Send now"));
+    btn.disabled = busy || !channelsReady || !ti || !b || !!err || text.value.length > 3500;
+  }
+
+  // ---- Channel picker (compose tab and posted tab share one selection) ----
+  function channelName(c) { return (c.private ? "🔒 " : "#") + c.name; }
+  function channelLabel() {
+    const c = channels.find((x) => x.id === channelId);
+    return c ? channelName(c) : t("Default channel");
+  }
+  function renderChannels() {
+    ["channel", "viewChannel"].forEach((id) => {
+      const sel = $(id); sel.textContent = "";
+      const list = channels.length ? channels : [{ id: "", name: t("Default channel"), private: false, plain: true }];
+      list.forEach((c) => {
+        const o = document.createElement("option"); o.value = c.id; o.textContent = c.plain ? c.name : channelName(c);
+        sel.append(o);
+      });
+      sel.value = channelId; sel.disabled = !channelsReady || busy;
+    });
+  }
+  function setChannel(id) {
+    if (id === channelId) return;
+    channelId = id;
+    try { localStorage.setItem("channel", id); } catch (e) {}
+    renderChannels(); refresh(); page = 1; loadActivity();
+  }
+  async function loadChannels() {
+    let res = { channels: [], default: "", warnings: [] };
+    try { res = await (await fetch("/api/channels", { cache: "no-store" })).json(); }
+    catch (e) { res.warnings = ["Could not load the channel list"]; }
+    channels = Array.isArray(res.channels) ? res.channels : [];
+    let saved = "";
+    try { saved = localStorage.getItem("channel") || ""; } catch (e) {}
+    const has = (id) => channels.some((c) => c.id === id);
+    channelId = channels.length ? (has(saved) ? saved : has(res.default) ? res.default : channels[0].id) : "";
+    channelsReady = true;
+    const w = $("warnChannel"), warn = (res.warnings || []).join(" | ");
+    w.textContent = warn ? warn + ". " + t("Messages go to the default channel.") : ""; w.hidden = !warn;
+    renderChannels(); refresh(); loadActivity();
   }
 
   function setMode(isLater) {
@@ -483,40 +541,63 @@
 
   async function send() {
     const d = scheduledAt(), wasLater = later;
-    busy = true; btn.textContent = wasLater ? t("Scheduling...") : t("Sending..."); btn.disabled = true;
+    const target = channelId, edit = editing;  // fixed now, so changing the picker mid-send cannot redirect the message
+    busy = true; btn.textContent = edit ? t("Saving...") : wasLater ? t("Scheduling...") : t("Sending..."); btn.disabled = true; renderChannels();
     let imgs = [];
     try { imgs = await prepareImages(); }
     catch (err) {
       showToast(err.message === "too_big" ? t("Images are too large in total, remove some") : t("Could not read one of the images"), true);
-      busy = false; refresh(); return;
+      busy = false; renderChannels(); refresh(); return;
     }
     try {
-      const r = await fetch("/api/send", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.value, text: text.value, post_at: d ? Math.floor(d.getTime() / 1000) : null, images: imgs })
+      const payload = { title: title.value, text: text.value, post_at: d ? Math.floor(d.getTime() / 1000) : null, images: imgs, channel: target };
+      if (edit) { payload.id = edit.id; payload.old_channel = edit.channel; }
+      const r = await fetch(edit ? "/api/edit" : "/api/send", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
       const res = await r.json().catch(() => ({}));
       if (r.ok) {
-        showToast(wasLater ? t("Scheduled for {when}", { when: fmt(d) }) : t("Message sent to Slack"));
+        showToast(edit ? t("Scheduled message updated for {when}", { when: fmt(d) })
+          : wasLater ? t("Scheduled for {when}", { when: fmt(d) }) : t("Message sent to Slack"));
+        editing = null;
         title.value = ""; text.value = ""; when.value = ""; clearImages(); setMode(false);
         setTimeout(loadActivity, 1500);
       } else showToast(res.message ? t(res.message) : (r.status === 413 ? t("Images are too large in total") : t("Error {code}", { code: r.status })), true);
     } catch (err) { showToast(t("Network error, nothing was sent"), true); }
-    busy = false; refresh();
+    busy = false; renderChannels(); refresh();
   }
 
   function openDialog(heading, body, okLabel, action) {
     $("dlgTitle").textContent = heading; $("dlgBody").textContent = body; $("dlgOk").textContent = okLabel;
     onConfirm = action; dlg.showModal();
   }
+  // ---- Edit a scheduled message: Slack cannot edit one, so the server schedules the new version and cancels the original ----
+  function startEdit(m) {
+    const parts = split(m.text);
+    editing = { id: m.id, channel: channelId };
+    title.value = parts.title === t("(empty)") ? "" : decodeEnt(parts.title);
+    text.value = decodeEnt(parts.body);
+    clearImages();
+    when.value = toLocalInput(new Date(m.post_at * 1000));
+    setMode(true); showTab("compose"); title.focus();
+  }
+  function stopEdit() {
+    editing = null; title.value = ""; text.value = ""; when.value = ""; clearImages(); setMode(false);
+  }
   function askConfirm() {
     if (btn.disabled) return;
     const d = scheduledAt(), n = images.length;
+    if (editing) {
+      openDialog(t("Save changes to this scheduled message?"),
+        t("The original will be cancelled and replaced by this version, scheduled for {when} in {channel}. Images of the original are not kept.",
+          { when: d ? fmt(d) : "", channel: channelLabel() }), t("Save changes"), send);
+      return;
+    }
     const key = n
-      ? (later ? "It will be posted to the Slack channel with {n} image(s) on {when}." : "It will be posted to the Slack channel with {n} image(s) right away.")
-      : (later ? "It will be posted to the Slack channel on {when}." : "It will be posted to the Slack channel right away.");
+      ? (later ? "It will be posted to {channel} with {n} image(s) on {when}." : "It will be posted to {channel} with {n} image(s) right away.")
+      : (later ? "It will be posted to {channel} on {when}." : "It will be posted to {channel} right away.");
     openDialog(later ? t("Schedule this message?") : t("Send this message now?"),
-      t(key, { when: d ? fmt(d) : "", n }), later ? t("Schedule") : t("Send"), send);
+      t(key, { when: d ? fmt(d) : "", n, channel: channelLabel() }), later ? t("Schedule") : t("Send"), send);
   }
 
   $("f").addEventListener("submit", (e) => { e.preventDefault(); askConfirm(); });
@@ -636,6 +717,9 @@
   document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !dlg.open && !$("f").hidden) { e.preventDefault(); askConfirm(); }
   });
+  $("editCancel").addEventListener("click", stopEdit);
+  $("channel").addEventListener("change", (e) => setChannel(e.target.value));
+  $("viewChannel").addEventListener("change", (e) => setChannel(e.target.value));
   $("tabCompose").addEventListener("click", () => showTab("compose"));
   $("tabPosted").addEventListener("click", () => showTab("posted"));
 
@@ -755,25 +839,33 @@
       const c = document.createElement("button");
       c.type = "button"; c.className = "btn btn-outline-danger btn-sm"; c.textContent = t("Cancel");
       c.addEventListener("click", () => askCancel(m, ti));
-      const act = document.createElement("div"); act.className = "text-end"; act.append(c);
+      const e = document.createElement("button");
+      e.type = "button"; e.className = "btn btn-outline-primary btn-sm"; e.textContent = t("Edit");
+      e.addEventListener("click", () => startEdit(m));
+      const act = document.createElement("div"); act.className = "d-flex justify-content-end gap-2"; act.append(e, c);
       tr.append(td(titleCell(m)), td(fmt(new Date(m.post_at * 1000)), "text-nowrap small"), td(act));
       rowOpens(tr, m, "sched"); sb.append(tr);
     });
   }
+  let activityReq = 0;
   async function loadActivity() {
+    if (!channelsReady) return;  // loadChannels() calls this once the channel is known
+    const req = ++activityReq, ch = channelId;
     $("refresh").disabled = true;
+    let res;
     try {
-      const r = await fetch("/api/messages", { cache: "no-store" });
-      data = await r.json();
-    } catch (e) { data = { scheduled: [], sent: [], warnings: ["Could not load activity"] }; }
-    $("refresh").disabled = false; renderList();
+      const r = await fetch("/api/messages" + (ch ? "?channel=" + encodeURIComponent(ch) : ""), { cache: "no-store" });
+      res = await r.json();
+    } catch (e) { res = { scheduled: [], sent: [], warnings: ["Could not load activity"] }; }
+    if (req !== activityReq) return;  // the channel changed while this was loading
+    data = res; $("refresh").disabled = false; renderList();
   }
   function askCancel(m, ti) {
     openDialog(t("Cancel this scheduled message?"),
       t("\"{title}\" planned for {when} will not be sent.", { title: ti, when: fmt(new Date(m.post_at * 1000)) }),
       t("Cancel message"), async () => {
         try {
-          const r = await fetch("/api/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: m.id }) });
+          const r = await fetch("/api/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: m.id, channel: channelId }) });
           const res = await r.json().catch(() => ({}));
           showToast(res.message ? t(res.message) : t("Error {code}", { code: r.status }), !r.ok);
         } catch (e) { showToast(t("Network error"), true); }
@@ -809,7 +901,7 @@
   try { saved = localStorage.getItem("lang") || "vi"; } catch (e) {}
   setMode(false); renderImages();
   setLang(saved === "en" ? "en" : "vi");
-  loadActivity();
+  loadChannels();
   if (location.hash === "#posted") showTab("posted");
 </script>
 </body>

@@ -1,9 +1,12 @@
 """Manual send: validate a request from the web form and post or schedule it through the Slack bot."""
 import base64
+import os
 import re
 import time
 
 from . import slack
+
+CHANNEL_RE = re.compile(r"[CG][A-Z0-9]{6,20}")  # Slack public / private channel ids
 
 MAX_TITLE = 150
 MAX_BODY = 3500
@@ -83,9 +86,22 @@ def build_blocks(text, file_ids, alt):
     return blocks
 
 
-def handle(title, body, post_at=None, images=None, post=slack.post, schedule=slack.schedule,
-           upload=slack.upload_images, now=time.time):
-    """Return (http_status, message). Slack calls are injectable for tests."""
+def _clean_channel(channel):
+    """None for 'use the server default', the id when it looks like a Slack channel id; raise ValueError otherwise."""
+    channel = str(channel or "").strip()
+    if not channel:
+        return None
+    if not CHANNEL_RE.fullmatch(channel):
+        raise ValueError("Invalid channel")
+    return channel
+
+
+def handle(title, body, post_at=None, images=None, channel=None, post=slack.post, schedule=slack.schedule,
+           upload=slack.upload_images, now=time.time, list_channels=slack.list_channels):
+    """Return (http_status, message). Slack calls are injectable for tests.
+
+    `channel` is the channel id picked in the form. Empty means the SLACK_CHANNEL_ID default. A picked channel must be
+    one the bot is a member of, which replaces the SLACK_ALLOWED_CHANNELS check for manual sends."""
     title = " ".join(str(title or "").split())
     body = str(body or "").strip()
     if not title:
@@ -97,9 +113,21 @@ def handle(title, body, post_at=None, images=None, post=slack.post, schedule=sla
     if len(body) > MAX_BODY:
         return 400, f"Message is too long (max {MAX_BODY} characters)"
     try:
+        channel = _clean_channel(channel)
         files = decode_images(images)
     except ValueError as ex:
         return 400, str(ex)
+    if channel and channel == os.environ.get("SLACK_CHANNEL_ID"):
+        channel = None  # same as before this feature: SLACK_CHANNEL_ID and SLACK_ALLOWED_CHANNELS apply
+    if channel:
+        try:
+            known = {c["id"] for c in list_channels()}
+        except Exception as ex:
+            print(f"[manual] channel check failed: {type(ex).__name__}: {ex}")
+            return 502, f"Could not check the channel: {_reason(ex)}"
+        if channel not in known:
+            return 400, "The bot is not a member of this channel"
+    to = {"channel": channel} if channel else {}
     text = build_text(title, body)
     if post_at in (None, ""):
         when = None
@@ -115,6 +143,7 @@ def handle(title, body, post_at=None, images=None, post=slack.post, schedule=sla
             return 400, "Schedule time must be within 120 days"
     try:
         extra = {"blocks": build_blocks(text, upload(files), title)} if files else {}
+        extra.update(to)
         if when is None:
             post(text, **extra)
             return 200, "Sent"
@@ -130,15 +159,41 @@ def handle(title, body, post_at=None, images=None, post=slack.post, schedule=sla
         return 502, "Failed to send to Slack, check the function logs"
 
 
-def activity(list_scheduled=slack.list_scheduled, list_sent=slack.list_sent):
-    """Return {"scheduled": [...], "sent": [...], "warnings": [...]}. Each list fails independently."""
+def channels(list_channels=slack.list_channels, default=None):
+    """Return {"channels": [{id, name, private}], "default": id, "warnings": [...]} for the channel picker."""
+    if default is None:
+        default = os.environ.get("SLACK_CHANNEL_ID", "")
+    out = {"channels": [], "default": default if CHANNEL_RE.fullmatch(default or "") else "", "warnings": []}
+    try:
+        out["channels"] = list_channels()
+        if out["default"] and all(c["id"] != out["default"] for c in out["channels"]):
+            # Keep the old behaviour reachable: the configured channel may work without the bot being a member of it
+            # (for example a public channel with chat:write.public), and its scheduled messages live there.
+            out["channels"].insert(0, {"id": out["default"], "name": out["default"], "private": False})
+    except Exception as ex:
+        print(f"[manual] channel list failed: {type(ex).__name__}: {ex}")
+        out["warnings"].append(f"Channel list unavailable: {_reason(ex)}"
+                               + (" (add the channels:read / groups:read scope and reinstall the app)"
+                                  if "missing_scope" in _reason(ex) else ""))
+    return out
+
+
+def activity(list_scheduled=slack.list_scheduled, list_sent=slack.list_sent, channel=None):
+    """Return {"scheduled": [...], "sent": [...], "warnings": [...]} for `channel` (default: the server channel).
+    Each list fails independently."""
     out = {"scheduled": [], "sent": [], "warnings": []}
     try:
-        out["scheduled"] = sorted(list_scheduled(), key=lambda m: m["post_at"])
+        channel = _clean_channel(channel)
+    except ValueError:
+        out["warnings"].append("Invalid channel")
+        return out
+    kw = {"channel": channel} if channel else {}
+    try:
+        out["scheduled"] = sorted(list_scheduled(**kw), key=lambda m: m["post_at"])
     except Exception as ex:
         out["warnings"].append(f"Scheduled list unavailable: {_reason(ex)}")
     try:
-        out["sent"] = list_sent()
+        out["sent"] = list_sent(**kw)
     except Exception as ex:
         out["warnings"].append(f"Sent history unavailable: {_reason(ex)}"
                                + (" (add the channels:history / groups:history scope and reinstall the app)"
@@ -146,15 +201,56 @@ def activity(list_scheduled=slack.list_scheduled, list_sent=slack.list_sent):
     return out
 
 
-def cancel(scheduled_id, cancel_fn=slack.cancel_scheduled):
-    if not re.fullmatch(r"Q[A-Z0-9]{5,30}", str(scheduled_id or "")):
+def cancel(scheduled_id, cancel_fn=slack.cancel_scheduled, channel=None):
+    if not SCHEDULED_ID_RE.fullmatch(str(scheduled_id or "")):
         return 400, "Invalid scheduled message id"
     try:
-        cancel_fn(scheduled_id)
+        channel = _clean_channel(channel)
+    except ValueError as ex:
+        return 400, str(ex)
+    try:
+        cancel_fn(scheduled_id, **({"channel": channel} if channel else {}))
     except Exception as ex:
         print(f"[manual] cancel failed: {type(ex).__name__}: {ex}")
         return 502, f"Failed to cancel: {_reason(ex)}"
     return 200, "Cancelled"
+
+
+SCHEDULED_ID_RE = re.compile(r"Q[A-Z0-9]{5,30}")
+
+
+def edit(scheduled_id, title, body, post_at, images=None, channel=None, old_channel=None,
+         list_scheduled=slack.list_scheduled, cancel_fn=slack.cancel_scheduled, **handle_kw):
+    """Replace a scheduled message. Slack cannot edit one, so the new version is scheduled first and the original is
+    cancelled afterwards: a failure in between leaves the original in place (or a duplicate), never a lost message.
+    `channel` is where the new version goes, `old_channel` where the original is scheduled (empty = server default).
+    Images of the original cannot be read back from Slack, so the new version only has the images sent with it."""
+    if not SCHEDULED_ID_RE.fullmatch(str(scheduled_id or "")):
+        return 400, "Invalid scheduled message id"
+    try:
+        old_channel = _clean_channel(old_channel)
+    except ValueError as ex:
+        return 400, str(ex)
+    if post_at in (None, ""):
+        return 400, "A scheduled message needs a schedule time"
+    old = {"channel": old_channel} if old_channel else {}
+    try:
+        exists = any(m["id"] == scheduled_id for m in list_scheduled(**old))
+    except Exception as ex:
+        print(f"[manual] edit lookup failed: {type(ex).__name__}: {ex}")
+        return 502, f"Could not check the scheduled message: {_reason(ex)}"
+    if not exists:
+        return 409, "The scheduled message no longer exists (already sent or cancelled)"
+    status, message = handle(title, body, post_at, images, channel, **handle_kw)
+    if status != 200:
+        return status, message  # nothing changed, the original is still scheduled
+    try:
+        cancel_fn(scheduled_id, **old)
+    except Exception as ex:
+        print(f"[manual] edit cancel failed: {type(ex).__name__}: {ex}")
+        return 502, (f"The new version is scheduled, but the original could not be cancelled: {_reason(ex)}. "
+                     "Cancel the original by hand.")
+    return 200, "Updated"
 
 
 def _reason(ex):

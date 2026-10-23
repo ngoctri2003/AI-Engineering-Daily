@@ -1,4 +1,4 @@
-"""Vercel serverless endpoint: POST /api/send with JSON {"title": "...", "text": "...", "post_at": <unix seconds, optional>, "images": [<base64>, ...] (optional)}."""
+"""Vercel serverless endpoint: POST /api/send with JSON {"title": "...", "text": "...", "post_at": <unix seconds, optional>, "images": [<base64>, ...] (optional), "channel": "<channel id, optional>"}."""
 import json
 import os
 import sys
@@ -22,7 +22,8 @@ class handler(BaseHTTPRequestHandler):
             return self._reply(400, "Invalid request body")
         if not isinstance(body, dict):
             return self._reply(400, "Invalid request body")
-        status, message = manual.handle(body.get("title"), body.get("text"), body.get("post_at"), body.get("images"))
+        status, message = manual.handle(body.get("title"), body.get("text"), body.get("post_at"), body.get("images"),
+                                        body.get("channel"))
         self._reply(status, message)
 
     def _reply(self, status, message):

@@ -53,13 +53,14 @@ def split_message(text, limit=MAX_MESSAGE):
     return parts
 
 
-def post(text, notes=None, blocks=None):
+def post(text, notes=None, blocks=None, channel=None):
+    """Post to SLACK_CHANNEL_ID, or to `channel` when given (manual send; the caller has already checked it)."""
     if blocks:  # rich message (images): sent as one message, text limits apply per block
-        return _post_one(text, notes, blocks)
+        return _post_one(text, notes, blocks, channel)
     chunks = split_message(text)
     for chunk in chunks[:-1]:
-        _post_one(chunk)
-    return _post_one(chunks[-1], notes)
+        _post_one(chunk, channel=channel)
+    return _post_one(chunks[-1], notes, channel=channel)
 
 
 def _slack_ok(raw):
@@ -81,13 +82,16 @@ def _call_with_retry(call, rich):
             time.sleep(1.5)
 
 
-def _post_one(text, notes=None, blocks=None):
+def _post_one(text, notes=None, blocks=None, channel=None):
     token = os.environ.get("SLACK_BOT_TOKEN")
-    channel = os.environ.get("SLACK_CHANNEL_ID")
     webhook = os.environ.get("SLACK_WEBHOOK_URL")
+    if channel and not token:  # a webhook is bound to one channel, so it must not silently stand in
+        raise RuntimeError("Choosing a channel needs SLACK_BOT_TOKEN")
+    explicit = bool(channel)
+    channel = channel or os.environ.get("SLACK_CHANNEL_ID")
     allow = [c for c in os.environ.get("SLACK_ALLOWED_CHANNELS", "").split(",") if c]
     if token and channel:
-        if allow and channel not in allow:
+        if allow and not explicit and channel not in allow:
             raise RuntimeError(f"Channel {channel} is not in the allow-list")
         auth = {"Authorization": f"Bearer {token}"}
         payload = {"channel": channel, "text": text, "mrkdwn": True,
@@ -111,14 +115,15 @@ def _post_one(text, notes=None, blocks=None):
     raise RuntimeError("Missing SLACK_BOT_TOKEN+SLACK_CHANNEL_ID or SLACK_WEBHOOK_URL")
 
 
-def schedule(text, post_at, blocks=None):
+def schedule(text, post_at, blocks=None, channel=None):
     """Schedule a message with chat.scheduleMessage (bot token only). post_at is a unix timestamp."""
     token = os.environ.get("SLACK_BOT_TOKEN")
-    channel = os.environ.get("SLACK_CHANNEL_ID")
+    explicit = bool(channel)
+    channel = channel or os.environ.get("SLACK_CHANNEL_ID")
     allow = [c for c in os.environ.get("SLACK_ALLOWED_CHANNELS", "").split(",") if c]
     if not (token and channel):
-        raise RuntimeError("Scheduling needs SLACK_BOT_TOKEN and SLACK_CHANNEL_ID")
-    if allow and channel not in allow:
+        raise RuntimeError("Scheduling needs SLACK_BOT_TOKEN and a channel (SLACK_CHANNEL_ID or the one picked in the form)")
+    if allow and not explicit and channel not in allow:
         raise RuntimeError(f"Channel {channel} is not in the allow-list")
     payload = {"channel": channel, "text": text, "post_at": int(post_at), "mrkdwn": True,
                "unfurl_links": False, "unfurl_media": False}
@@ -128,8 +133,13 @@ def schedule(text, post_at, blocks=None):
         "https://slack.com/api/chat.scheduleMessage", payload, {"Authorization": f"Bearer {token}"})), bool(blocks))
 
 
-def _config():
+def _config(channel=None):
+    """(token, channel). An explicit `channel` comes from the manual form and skips the env channel and allow-list."""
     token = os.environ.get("SLACK_BOT_TOKEN")
+    if channel:
+        if not token:
+            raise RuntimeError("Missing SLACK_BOT_TOKEN")
+        return token, channel
     channel = os.environ.get("SLACK_CHANNEL_ID")
     allow = [c for c in os.environ.get("SLACK_ALLOWED_CHANNELS", "").split(",") if c]
     if not (token and channel):
@@ -137,6 +147,25 @@ def _config():
     if allow and channel not in allow:
         raise RuntimeError(f"Channel {channel} is not in the allow-list")
     return token, channel
+
+
+def list_channels():
+    """Channels (public and private) the bot is a member of, sorted by name. Needs channels:read and groups:read."""
+    token = os.environ.get("SLACK_BOT_TOKEN")
+    if not token:
+        raise RuntimeError("Missing SLACK_BOT_TOKEN")
+    out, cursor = [], ""
+    for _ in range(10):  # 200 per page, so this covers 2000 channels
+        params = {"types": "public_channel,private_channel", "exclude_archived": "true", "limit": 200}
+        if cursor:
+            params["cursor"] = cursor
+        res = _get("users.conversations", params, token)
+        out += [{"id": c["id"], "name": c.get("name") or c["id"], "private": bool(c.get("is_private"))}
+                for c in res.get("channels", [])]
+        cursor = (res.get("response_metadata") or {}).get("next_cursor", "")
+        if not cursor:
+            break
+    return sorted(out, key=lambda c: c["name"].lower())
 
 
 def _get(method, params, token):
@@ -150,17 +179,17 @@ def _get(method, params, token):
     return res
 
 
-def list_scheduled():
-    """Messages this bot has scheduled for the configured channel."""
-    token, channel = _config()
+def list_scheduled(channel=None):
+    """Messages this bot has scheduled for `channel` (default: the configured channel)."""
+    token, channel = _config(channel)
     res = _get("chat.scheduledMessages.list", {"channel": channel, "limit": 100}, token)
     return [{"id": m["id"], "post_at": m["post_at"], "text": m.get("text", "")}
             for m in res.get("scheduled_messages", [])]
 
 
-def list_sent(limit=100):
-    """Recent messages posted by this bot in the configured channel (needs channels:history or groups:history)."""
-    token, channel = _config()
+def list_sent(limit=100, channel=None):
+    """Recent messages posted by this bot in `channel` (default: the configured channel; needs channels:history or groups:history)."""
+    token, channel = _config(channel)
     who = _get("auth.test", {}, token)
     bot_user, base = who.get("user_id"), (who.get("url") or "").rstrip("/")
     res = _get("conversations.history", {"channel": channel, "limit": 200}, token)
@@ -176,8 +205,8 @@ def list_sent(limit=100):
     return out
 
 
-def cancel_scheduled(scheduled_id):
-    token, channel = _config()
+def cancel_scheduled(scheduled_id, channel=None):
+    token, channel = _config(channel)
     res = json.loads(_post_json("https://slack.com/api/chat.deleteScheduledMessage", {
         "channel": channel, "scheduled_message_id": scheduled_id}, {"Authorization": f"Bearer {token}"}))
     if not res.get("ok"):
@@ -186,7 +215,9 @@ def cancel_scheduled(scheduled_id):
 
 def upload_images(images):
     """Upload [(filename, bytes)] to Slack without sharing them; return the file ids (needs the files:write scope)."""
-    token, _channel = _config()
+    token = os.environ.get("SLACK_BOT_TOKEN")  # uploads are not tied to a channel, so no channel is needed
+    if not token:
+        raise RuntimeError("Missing SLACK_BOT_TOKEN")
 
     def one(item):
         name, data = item

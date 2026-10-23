@@ -1,4 +1,4 @@
-"""Vercel serverless endpoint: POST /api/cancel with JSON {"id": "<scheduled message id>"}."""
+"""Vercel serverless endpoint: POST /api/cancel with JSON {"id": "<scheduled message id>", "channel": "<channel id, optional>"}."""
 import json
 import os
 import sys
@@ -18,7 +18,7 @@ class handler(BaseHTTPRequestHandler):
             body = None
         if not isinstance(body, dict):
             return self._reply(400, "Invalid request body")
-        status, message = manual.cancel(body.get("id"))
+        status, message = manual.cancel(body.get("id"), channel=body.get("channel"))
         self._reply(status, message)
 
     def _reply(self, status, message):
