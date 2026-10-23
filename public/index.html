@@ -9,6 +9,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <style>
   body { background:var(--bs-tertiary-bg); }
+  [data-bs-theme=light] body { background:linear-gradient(180deg,#eef3ff 0,#f8faff 260px,#ffffff 100%); background-attachment:fixed; }
+  [data-bs-theme=light] .card { border-color:#e3e8f4; box-shadow:0 2px 12px rgba(40,70,140,.08) !important; }
+  [data-bs-theme=light] .brand-icon { background:linear-gradient(135deg,#4f7cff,#7b5cff); }
+  [data-bs-theme=light] .editor-bar, [data-bs-theme=light] .drop { background:#f6f8fd; }
   .brand-icon { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--bs-primary); color:#fff; font-size:22px; flex:none; }
   .nav-tabs .nav-link { font-weight:600; color:var(--bs-secondary-color); }
   .nav-tabs .nav-link.active { color:var(--bs-primary); }
@@ -58,9 +62,12 @@
         <div class="text-secondary small" data-i18n="Send hand-written messages to Slack and track what was posted.">Send hand-written messages to Slack and track what was posted.</div>
       </div>
     </div>
-    <div class="btn-group btn-group-sm" role="group" aria-label="Language">
-      <button type="button" class="btn btn-outline-secondary" data-lang="vi">VI</button>
-      <button type="button" class="btn btn-outline-secondary" data-lang="en">EN</button>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="themeBtn" aria-label="Theme"></button>
+      <div class="btn-group btn-group-sm" role="group" aria-label="Language">
+        <button type="button" class="btn btn-outline-secondary" data-lang="vi">VI</button>
+        <button type="button" class="btn btn-outline-secondary" data-lang="en">EN</button>
+      </div>
     </div>
   </header>
 
@@ -546,9 +553,19 @@
   }));
 
   // ---- Boot ----
-  const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
-  const applyTheme = () => document.documentElement.setAttribute("data-bs-theme", darkMq.matches ? "dark" : "light");
-  applyTheme(); darkMq.addEventListener("change", applyTheme);
+  // Light theme by default; the sun/moon button switches and remembers the choice.
+  let theme = "light";
+  try { theme = localStorage.getItem("theme") === "dark" ? "dark" : "light"; } catch (e) {}
+  const applyTheme = () => {
+    document.documentElement.setAttribute("data-bs-theme", theme);
+    $("themeBtn").innerHTML = '<i class="bi ' + (theme === "dark" ? "bi-sun" : "bi-moon-stars") + '"></i>';
+  };
+  $("themeBtn").addEventListener("click", () => {
+    theme = theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem("theme", theme); } catch (e) {}
+    applyTheme();
+  });
+  applyTheme();
   let saved = "vi";
   try { saved = localStorage.getItem("lang") || "vi"; } catch (e) {}
   setMode(false); renderImages();
