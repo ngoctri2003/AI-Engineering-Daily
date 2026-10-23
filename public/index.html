@@ -98,6 +98,10 @@
   .tag { border-radius:999px; padding:1px 9px; font-size:12px; font-weight:600; background:var(--soft); color:var(--muted); }
   .tag.sched { background:var(--accent-soft); color:var(--accent); }
   .btn.small { padding:4px 12px; font-size:13px; color:var(--err); }
+  .sub-head { font-weight:700; margin-bottom:4px; }
+  .item { cursor:pointer; }
+  .item.open .item-body { display:block; -webkit-line-clamp:unset; white-space:pre-wrap; overflow:visible; }
+  .item-meta a { color:var(--link, var(--accent)); text-decoration:none; }
   .none { color:var(--muted); text-align:center; padding:24px 0; }
   .warn-box { background:var(--soft); border-left:3px solid var(--err); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:13px; color:var(--muted); }
   /* modal + toast */
@@ -206,17 +210,16 @@
 
   <section class="card" id="activity">
     <div class="act-head">
-      <h2 style="margin:0">Activity</h2>
-      <div class="act-tabs">
-        <div class="seg" role="group" aria-label="Activity list">
-          <button type="button" id="tabSched" aria-pressed="true">Scheduled <span class="badge" id="nSched">0</span></button>
-          <button type="button" id="tabSent" aria-pressed="false">Sent <span class="badge" id="nSent">0</span></button>
-        </div>
-        <button type="button" class="btn" id="refresh">Refresh</button>
-      </div>
+      <h2 style="margin:0">Posted messages</h2>
+      <button type="button" class="btn" id="refresh">Refresh</button>
     </div>
-    <div id="warn" class="warn-box" hidden></div>
-    <ul id="list" class="list"></ul>
+    <div class="sub-head">Posted <span class="badge" id="nSent">0</span></div>
+    <div id="warnSent" class="warn-box" hidden></div>
+    <ul id="listSent" class="list"></ul>
+
+    <div class="sub-head" style="margin-top:22px">Scheduled <span class="badge" id="nSched">0</span></div>
+    <div id="warnSched" class="warn-box" hidden></div>
+    <ul id="listSched" class="list"></ul>
   </section>
 </div>
 
@@ -235,7 +238,7 @@
   const title = $("title"), text = $("text"), when = $("when"), btn = $("btn");
   const preview = $("preview"), summary = $("summary"), dlg = $("dlg"), toast = $("toast");
   let later = false, busy = false, onConfirm = null;
-  let data = { scheduled: [], sent: [], warnings: [] }, tab = "scheduled";
+  let data = { scheduled: [], sent: [], warnings: [] };
   const MAX_IMAGES = 10, IMAGE_BUDGET = 2800000;
   let images = [];
 
@@ -396,7 +399,7 @@
       if (r.ok) {
         showToast(later ? "Scheduled for " + fmt(d) : "Message sent to Slack");
         title.value = ""; text.value = ""; when.value = ""; clearImages(); setMode(false);
-        tab = wasLater ? "scheduled" : "sent"; setTimeout(loadActivity, 1500);
+        setTimeout(loadActivity, 1500);
       } else showToast(res.message || (r.status === 413 ? "Images are too large in total" : "Error " + r.status), true);
     } catch (err) { showToast("Network error, nothing was sent", true); }
     busy = false; refresh();
@@ -446,45 +449,58 @@
     const first = (i < 0 ? t : t.slice(0, i)).trim();
     const rest = i < 0 ? "" : t.slice(i + 1).trim();
     const m = first.match(/^\*(.+)\*$/);
-    return { title: m ? m[1] : first || "(empty)", body: rest.replace(/\s+/g, " ") };
+    return { title: m ? m[1] : first || "(empty)", body: rest };
   }
-  function renderList() {
-    $("nSched").textContent = data.scheduled.length;
-    $("nSent").textContent = data.sent.length;
-    $("tabSched").setAttribute("aria-pressed", String(tab === "scheduled"));
-    $("tabSent").setAttribute("aria-pressed", String(tab === "sent"));
-    const w = $("warn");
-    w.hidden = !data.warnings.length; w.textContent = data.warnings.join(" | ");
-    const ul = $("list"); ul.textContent = "";
-    const rows = tab === "scheduled" ? data.scheduled : data.sent;
+  function fill(ul, rows, emptyText, build) {
+    ul.textContent = "";
     if (!rows.length) {
-      const li = document.createElement("li"); li.className = "none";
-      li.textContent = tab === "scheduled" ? "No scheduled messages" : "No messages yet";
+      const li = document.createElement("li"); li.className = "none"; li.textContent = emptyText;
       ul.appendChild(li); return;
     }
     rows.forEach((m) => {
       const { title: t, body } = split(m.text);
-      const li = document.createElement("li"); li.className = "item";
+      const li = document.createElement("li"); li.className = "item"; li.tabIndex = 0;
       const main = document.createElement("div"); main.className = "item-main";
       const h = document.createElement("div"); h.className = "item-title"; h.textContent = t;
       const p = document.createElement("div"); p.className = "item-body"; p.textContent = body;
       main.append(h, p);
       const meta = document.createElement("div"); meta.className = "item-meta";
-      const when = document.createElement("div");
-      const tag = document.createElement("span"); tag.className = "tag";
-      if (tab === "scheduled") {
-        tag.className = "tag sched"; tag.textContent = "Scheduled";
-        when.textContent = fmt(new Date(m.post_at * 1000));
-        const c = document.createElement("button");
-        c.type = "button"; c.className = "btn small"; c.textContent = "Cancel";
-        c.addEventListener("click", () => askCancel(m, t));
-        meta.append(tag, when, c);
-      } else {
-        tag.textContent = /^AI Engineering Daily/.test(t) ? "Daily" : "Manual";
-        when.textContent = fmt(new Date(parseFloat(m.ts) * 1000));
-        meta.append(tag, when);
-      }
+      build(m, t, meta);
       li.append(main, meta); ul.appendChild(li);
+      const toggle = () => li.classList.toggle("open");
+      li.addEventListener("click", (e) => { if (!e.target.closest("button, a")) toggle(); });
+      li.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === li) toggle(); });
+    });
+  }
+  function warnFor(prefix) { return data.warnings.filter((w) => w.startsWith(prefix)).join(" | "); }
+  function renderList() {
+    $("nSched").textContent = data.scheduled.length;
+    $("nSent").textContent = data.sent.length;
+    [["warnSent", "Sent"], ["warnSched", "Scheduled"], ["warnSent", "Could not"]].forEach(([id, pre]) => {
+      const w = $(id), msg = warnFor(pre);
+      if (msg) { w.textContent = msg; w.hidden = false; } else if (pre !== "Could not") w.hidden = true;
+    });
+    fill($("listSent"), data.sent, "No posted messages found", (m, t, meta) => {
+      const tag = document.createElement("span"); tag.className = "tag";
+      tag.textContent = /^AI Engineering Daily/.test(t) ? "Daily" : "Manual";
+      const when = document.createElement("div"); when.textContent = fmt(new Date(parseFloat(m.ts) * 1000));
+      meta.append(tag, when);
+      if (m.images) {
+        const im = document.createElement("div"); im.textContent = m.images + (m.images > 1 ? " images" : " image");
+        meta.append(im);
+      }
+      if (m.link) {
+        const a = document.createElement("a"); a.href = m.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.textContent = "Open in Slack"; meta.append(a);
+      }
+    });
+    fill($("listSched"), data.scheduled, "No scheduled messages", (m, t, meta) => {
+      const tag = document.createElement("span"); tag.className = "tag sched"; tag.textContent = "Scheduled";
+      const when = document.createElement("div"); when.textContent = fmt(new Date(m.post_at * 1000));
+      const c = document.createElement("button");
+      c.type = "button"; c.className = "btn small"; c.textContent = "Cancel";
+      c.addEventListener("click", () => askCancel(m, t));
+      meta.append(tag, when, c);
     });
   }
   async function loadActivity() {
@@ -509,8 +525,6 @@
     };
     dlg.showModal();
   }
-  $("tabSched").addEventListener("click", () => { tab = "scheduled"; renderList(); });
-  $("tabSent").addEventListener("click", () => { tab = "sent"; renderList(); });
   $("refresh").addEventListener("click", loadActivity);
   loadActivity();
   refresh();

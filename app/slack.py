@@ -158,15 +158,19 @@ def list_scheduled():
             for m in res.get("scheduled_messages", [])]
 
 
-def list_sent(limit=30):
+def list_sent(limit=50):
     """Recent messages posted by this bot in the configured channel (needs channels:history or groups:history)."""
     token, channel = _config()
-    bot_user = _get("auth.test", {}, token).get("user_id")
-    res = _get("conversations.history", {"channel": channel, "limit": 100}, token)
+    who = _get("auth.test", {}, token)
+    bot_user, base = who.get("user_id"), (who.get("url") or "").rstrip("/")
+    res = _get("conversations.history", {"channel": channel, "limit": 200}, token)
     out = []
     for m in res.get("messages", []):
         if m.get("user") == bot_user or m.get("bot_id"):
-            out.append({"ts": m["ts"], "text": m.get("text", "")})
+            out.append({
+                "ts": m["ts"], "text": m.get("text", ""),
+                "images": sum(1 for b in m.get("blocks", []) if b.get("type") == "image") + len(m.get("files", [])),
+                "link": f"{base}/archives/{channel}/p{m['ts'].replace('.', '')}" if base else ""})
         if len(out) >= limit:
             break
     return out

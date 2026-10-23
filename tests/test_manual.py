@@ -139,5 +139,27 @@ class ImagesTest(unittest.TestCase):
         self.assertEqual(manual.build_blocks("x" * 7000, [], "T")[0]["text"]["text"], "x" * 3000)
 
 
+class ListSentTest(unittest.TestCase):
+    def test_filters_bot_messages_and_builds_link(self):
+        from unittest import mock
+        from app import slack
+
+        def fake_get(method, params, token):
+            if method == "auth.test":
+                return {"user_id": "UBOT", "url": "https://team.slack.com/"}
+            return {"messages": [
+                {"ts": "1700000002.000100", "user": "UBOT", "text": "*A*\n\nbody",
+                 "blocks": [{"type": "section"}, {"type": "image"}, {"type": "image"}]},
+                {"ts": "1700000001.000100", "user": "UHUMAN", "text": "chat"},
+                {"ts": "1700000000.000100", "bot_id": "B1", "text": "daily"}]}
+
+        with mock.patch.object(slack, "_config", return_value=("tok", "C123")):
+            with mock.patch.object(slack, "_get", fake_get):
+                out = slack.list_sent()
+        self.assertEqual([m["text"] for m in out], ["*A*\n\nbody", "daily"])
+        self.assertEqual(out[0]["images"], 2)
+        self.assertEqual(out[0]["link"], "https://team.slack.com/archives/C123/p1700000002000100")
+
+
 if __name__ == "__main__":
     unittest.main()
