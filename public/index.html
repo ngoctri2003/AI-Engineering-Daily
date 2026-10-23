@@ -17,6 +17,11 @@
   .nav-tabs .nav-link { font-weight:600; color:var(--bs-secondary-color); }
   .nav-tabs .nav-link.active { color:var(--bs-primary); }
   .card { border-radius:14px; }
+  .login-card { max-width:860px; margin-top:5vh; border-radius:20px; }
+  [data-bs-theme=light] .login-card { box-shadow:0 16px 48px rgba(40,70,140,.16) !important; }
+  .login-hero { background:linear-gradient(145deg,#4f7cff,#7b5cff); min-height:420px; }
+  .login-icon { width:52px; height:52px; border-radius:14px; display:grid; place-items:center; background:rgba(255,255,255,.2); color:#fff; font-size:26px; }
+  .login-card .form-control { height:calc(3.5rem + 2px); }
   .count { font-size:12px; color:var(--bs-secondary-color); font-variant-numeric:tabular-nums; }
   .count.warn { color:var(--bs-danger); }
   textarea.form-control { min-height:190px; resize:vertical; border-top-left-radius:0; border-top-right-radius:0; }
@@ -85,21 +90,36 @@
 
   <!-- Login: shown until /api/session says the visitor is signed in -->
   <div id="loginView" hidden>
-    <div class="card shadow-sm mx-auto" style="max-width:420px">
-      <div class="card-body p-4">
-        <h2 class="h5 mb-3" data-i18n="Sign in">Sign in</h2>
-        <form id="loginForm" novalidate>
-          <div class="mb-3">
-            <label class="form-label fw-semibold" for="loginEmail" data-i18n="Email">Email</label>
-            <input id="loginEmail" class="form-control" type="email" autocomplete="username" maxlength="256" required>
+    <div class="card login-card mx-auto overflow-hidden">
+      <div class="row g-0">
+        <div class="col-md-5 login-hero d-none d-md-flex flex-column justify-content-between p-4 text-white">
+          <div class="login-icon"><i class="bi bi-slack"></i></div>
+          <div>
+            <div class="h4 fw-bold mb-2">AI Engineering Daily</div>
+            <div class="small opacity-75" data-i18n="Send hand-written messages to Slack and track what was posted.">Send hand-written messages to Slack and track what was posted.</div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold" for="loginPass" data-i18n="Password">Password</label>
-            <input id="loginPass" class="form-control" type="password" autocomplete="current-password" maxlength="256" required>
+        </div>
+        <div class="col-md-7">
+          <div class="p-4 p-sm-5">
+            <h2 class="h3 fw-bold mb-1" data-i18n="Sign in">Sign in</h2>
+            <div class="text-secondary mb-4" data-i18n="Sign in to continue">Sign in to continue</div>
+            <form id="loginForm" novalidate>
+              <div class="form-floating mb-3">
+                <input id="loginEmail" class="form-control" type="email" placeholder="name@example.com" autocomplete="username" maxlength="256" required>
+                <label for="loginEmail" data-i18n="Email">Email</label>
+              </div>
+              <div class="input-group mb-3">
+                <div class="form-floating">
+                  <input id="loginPass" class="form-control" type="password" placeholder="Password" autocomplete="current-password" maxlength="256" required>
+                  <label for="loginPass" data-i18n="Password">Password</label>
+                </div>
+                <button type="button" class="btn btn-outline-secondary px-3" id="passToggle" data-i18n-title="Show password" title="Show password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+              </div>
+              <div class="alert alert-danger small py-2" id="loginErr" role="alert" hidden></div>
+              <button class="btn btn-primary btn-lg w-100 mt-2" id="loginBtn" type="submit"><span data-i18n="Sign in">Sign in</span></button>
+            </form>
           </div>
-          <div class="alert alert-danger small" id="loginErr" role="alert" hidden></div>
-          <button class="btn btn-primary w-100" id="loginBtn" type="submit"><span data-i18n="Sign in">Sign in</span></button>
-        </form>
+        </div>
       </div>
     </div>
   </div>
@@ -793,6 +813,13 @@
   });
   $("editCancel").addEventListener("click", stopEdit);
   $("loginForm").addEventListener("submit", doLogin);
+  $("passToggle").addEventListener("click", () => {
+    const p = $("loginPass"), show = p.type === "password";
+    p.type = show ? "text" : "password";
+    $("passToggle").title = t(show ? "Hide password" : "Show password");
+    $("passToggle").firstElementChild.className = show ? "bi bi-eye-slash" : "bi bi-eye";
+    p.focus();
+  });
   $("logoutBtn").addEventListener("click", doLogout);
   $("channel").addEventListener("change", (e) => setChannel(e.target.value));
   $("viewChannel").addEventListener("change", (e) => setChannel(e.target.value));
