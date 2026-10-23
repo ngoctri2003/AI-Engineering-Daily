@@ -1,234 +1,199 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi" data-bs-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Manual Slack Post</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <style>
-  :root {
-    --bg:#f4f5f8; --card:#ffffff; --fg:#1b1d22; --muted:#6a6f7a; --line:#dfe2e8; --soft:#eef0f4;
-    --accent:#4f46e5; --accent-fg:#ffffff; --accent-soft:#e8e7fd; --ok:#0f7b57; --err:#c4204f;
-    --slack-bg:#ffffff; --slack-fg:#1d1c1d; --code-bg:#f2f2f2; --code-fg:#c01343; --link:#1264a3;
-    --shadow:0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg:#121317; --card:#1b1d23; --fg:#ececf0; --muted:#9a9faa; --line:#2e313a; --soft:#252831;
-      --accent:#7c75ff; --accent-fg:#101014; --accent-soft:#2b2a52; --ok:#3ecf9b; --err:#ff7b9c;
-      --slack-bg:#1a1d21; --slack-fg:#d1d2d3; --code-bg:#2b2e33; --code-fg:#e8912d; --link:#1d9bd1;
-      --shadow:none;
-    }
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .wrap { max-width:1040px; margin:0 auto; padding:32px 16px 48px; }
-  header { margin-bottom:20px; }
-  h1 { font-size:24px; margin:0 0 4px; letter-spacing:-.01em; }
-  header p { margin:0; color:var(--muted); }
-  .grid { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:20px; align-items:start; }
-  @media (max-width:820px) { .grid { grid-template-columns:1fr; } }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow); }
-  .card h2 { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 14px; }
-  .field { margin-bottom:16px; }
-  .field-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
-  label, .lbl { font-weight:600; font-size:14px; }
-  .count { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
-  .count.warn { color:var(--err); }
-  input[type=text], input[type=datetime-local], textarea {
-    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
-    background:var(--bg); color:var(--fg); font:inherit; transition:border-color .15s, box-shadow .15s;
-  }
-  input:focus, textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-  textarea { min-height:200px; resize:vertical; border-top-left-radius:0; border-top-right-radius:0; }
-  .toolbar { display:flex; gap:4px; padding:6px; border:1px solid var(--line); border-bottom:0; border-radius:10px 10px 0 0; background:var(--soft); }
-  .tool { background:transparent; color:var(--fg); border:0; border-radius:6px; min-width:34px; height:30px; padding:0 8px; font:inherit; font-weight:700; cursor:pointer; }
-  .tool:hover { background:var(--card); }
-  .seg { display:inline-flex; background:var(--soft); border-radius:10px; padding:3px; gap:2px; }
-  .seg button { border:0; background:transparent; color:var(--muted); font:inherit; font-weight:600; padding:7px 16px; border-radius:8px; cursor:pointer; }
-  .seg button[aria-pressed=true] { background:var(--card); color:var(--fg); box-shadow:0 1px 2px rgba(0,0,0,.12); }
-  #sched { margin-top:12px; display:none; }
-  #sched.on { display:block; }
-  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-  .chip { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:999px; padding:5px 12px; font:inherit; font-size:13px; cursor:pointer; }
-  .chip:hover { border-color:var(--accent); color:var(--accent); }
-  .summary { margin-top:10px; font-size:13px; color:var(--muted); }
-  .primary { width:100%; margin-top:4px; background:var(--accent); color:var(--accent-fg); border:0; border-radius:10px; padding:13px 20px; font:inherit; font-weight:700; font-size:15px; cursor:pointer; }
-  .primary:hover:not(:disabled) { filter:brightness(1.08); }
-  .primary:disabled { opacity:.45; cursor:not-allowed; }
-  .kbd { text-align:center; margin-top:8px; font-size:12px; color:var(--muted); }
-  /* Slack-style preview */
-  .slack { background:var(--slack-bg); color:var(--slack-fg); border:1px solid var(--line); border-radius:10px; padding:14px; font:15px/1.46 "Lato", system-ui, sans-serif; min-height:120px; }
-  .slack .who { display:flex; gap:10px; align-items:flex-start; }
-  .avatar { width:36px; height:36px; border-radius:8px; background:var(--accent); color:var(--accent-fg); display:grid; place-items:center; font-weight:800; flex:none; }
-  .slack .name { font-weight:800; }
-  .slack .name small { font-weight:400; color:var(--muted); margin-left:6px; font-size:12px; }
-  .slack .msg { white-space:pre-wrap; word-break:break-word; margin-top:2px; }
-  .slack code { background:var(--code-bg); color:var(--code-fg); border:1px solid var(--line); border-radius:4px; padding:0 4px; font:13px ui-monospace, Consolas, monospace; }
-  .slack a { color:var(--link); text-decoration:none; }
-  .empty { color:var(--muted); font-style:italic; }
-  .tips { margin:14px 0 0; padding:0; list-style:none; color:var(--muted); font-size:13px; }
-  .tips li { margin:3px 0; }
-  .tips code { background:var(--soft); padding:0 4px; border-radius:4px; }
-  /* images */
-  .drop { border:1.5px dashed var(--line); border-radius:10px; padding:12px; background:var(--bg); }
-  .drop.over { border-color:var(--accent); background:var(--accent-soft); }
-  .drop-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .drop-row span { color:var(--muted); font-size:13px; }
+  body { background:var(--bs-tertiary-bg); }
+  .brand-icon { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--bs-primary); color:#fff; font-size:22px; flex:none; }
+  .nav-tabs .nav-link { font-weight:600; color:var(--bs-secondary-color); }
+  .nav-tabs .nav-link.active { color:var(--bs-primary); }
+  .card { border-radius:14px; }
+  .count { font-size:12px; color:var(--bs-secondary-color); font-variant-numeric:tabular-nums; }
+  .count.warn { color:var(--bs-danger); }
+  textarea.form-control { min-height:190px; resize:vertical; border-top-left-radius:0; border-top-right-radius:0; }
+  .editor-bar { border:1px solid var(--bs-border-color); border-bottom:0; border-radius:var(--bs-border-radius) var(--bs-border-radius) 0 0; background:var(--bs-tertiary-bg); padding:4px; display:flex; gap:2px; }
+  .editor-bar .btn { border:0; padding:2px 10px; }
+  .drop { border:1.5px dashed var(--bs-border-color); border-radius:10px; padding:12px; background:var(--bs-tertiary-bg); }
+  .drop.over { border-color:var(--bs-primary); background:var(--bs-primary-bg-subtle); }
   .thumbs { display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:8px; margin-top:10px; }
   .thumbs:empty { display:none; }
-  .thumb { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--soft); }
+  .thumb { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--bs-border-color); }
   .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-  .thumb button { position:absolute; top:4px; right:4px; width:22px; height:22px; border:0; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:14px; line-height:1; cursor:pointer; }
+  .thumb button { position:absolute; top:4px; right:4px; width:22px; height:22px; border:0; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:14px; line-height:1; cursor:pointer; padding:0; }
+  /* Slack-style preview */
+  .slack { background:var(--bs-body-bg); border:1px solid var(--bs-border-color); border-radius:10px; padding:14px; min-height:120px; }
+  .avatar { width:36px; height:36px; border-radius:8px; background:var(--bs-primary); color:#fff; display:grid; place-items:center; font-weight:800; flex:none; }
+  .slack .msg { white-space:pre-wrap; word-break:break-word; margin-top:2px; }
+  .slack code { background:var(--bs-tertiary-bg); color:var(--bs-danger); border:1px solid var(--bs-border-color); border-radius:4px; padding:0 4px; font-size:13px; }
   .pimgs { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
   .pimgs:empty { display:none; }
-  .pimgs img { max-width:100%; max-height:200px; border-radius:8px; border:1px solid var(--line); align-self:flex-start; }
-  /* activity */
-  #activity { margin-top:20px; }
-  .act-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
-  .act-tabs { display:flex; gap:10px; align-items:center; }
-  .badge { display:inline-block; min-width:20px; padding:0 6px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:12px; text-align:center; margin-left:4px; }
-  .list { list-style:none; margin:0; padding:0; }
-  .item { display:flex; gap:12px; justify-content:space-between; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); }
-  .item:first-child { border-top:0; }
-  .item-main { min-width:0; flex:1; }
-  .item-title { font-weight:700; overflow-wrap:anywhere; }
-  .item-body { color:var(--muted); font-size:14px; margin-top:2px; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .item-meta { display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:none; font-size:13px; color:var(--muted); text-align:right; }
-  .tag { border-radius:999px; padding:1px 9px; font-size:12px; font-weight:600; background:var(--soft); color:var(--muted); }
-  .tag.sched { background:var(--accent-soft); color:var(--accent); }
-  .btn.small { padding:4px 12px; font-size:13px; color:var(--err); }
-  .sub-head { font-weight:700; margin-bottom:4px; }
-  .item { cursor:pointer; }
-  .item.open .item-body { display:block; -webkit-line-clamp:unset; white-space:pre-wrap; overflow:visible; }
-  .item-meta a { color:var(--link, var(--accent)); text-decoration:none; }
-  .none { color:var(--muted); text-align:center; padding:24px 0; }
-  .warn-box { background:var(--soft); border-left:3px solid var(--err); border-radius:6px; padding:8px 12px; margin-bottom:10px; font-size:13px; color:var(--muted); }
-  /* modal + toast */
-  dialog { border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--fg); padding:22px; max-width:420px; width:calc(100% - 32px); box-shadow:0 20px 60px rgba(0,0,0,.35); }
+  .pimgs img { max-width:100%; max-height:200px; border-radius:8px; border:1px solid var(--bs-border-color); align-self:flex-start; }
+  .empty { color:var(--bs-secondary-color); font-style:italic; }
+  /* lists */
+  .post-item { cursor:pointer; }
+  .post-title { font-weight:700; overflow-wrap:anywhere; }
+  .post-body { color:var(--bs-secondary-color); font-size:14px; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .post-item.open .post-body { display:block; white-space:pre-wrap; overflow:visible; }
+  .post-meta { flex:none; text-align:right; font-size:13px; color:var(--bs-secondary-color); }
+  /* dialog + toast */
+  dialog { border:1px solid var(--bs-border-color); border-radius:14px; background:var(--bs-body-bg); color:var(--bs-body-color); padding:22px; max-width:440px; width:calc(100% - 32px); box-shadow:0 20px 60px rgba(0,0,0,.35); }
   dialog::backdrop { background:rgba(10,12,16,.55); }
-  dialog h3 { margin:0 0 6px; font-size:18px; }
-  dialog p { margin:0 0 6px; color:var(--muted); }
-  dialog .when { color:var(--fg); font-weight:600; }
-  .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
-  .btn { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:10px; padding:9px 18px; font:inherit; font-weight:600; cursor:pointer; }
-  .btn.go { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
-  #toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); opacity:0; pointer-events:none; background:var(--fg); color:var(--bg); padding:11px 18px; border-radius:10px; font-weight:600; transition:all .25s; max-width:calc(100% - 32px); }
+  #toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); opacity:0; pointer-events:none; background:var(--bs-emphasis-color); color:var(--bs-body-bg); padding:11px 18px; border-radius:10px; font-weight:600; transition:all .25s; max-width:calc(100% - 32px); z-index:2000; }
   #toast.show { opacity:1; transform:translate(-50%,0); }
-  #toast.err { background:var(--err); color:#fff; }
+  #toast.err { background:var(--bs-danger); color:#fff; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>Manual Slack Post</h1>
-    <p>Write a message, check the preview, then send it now or schedule it.</p>
+<div class="container py-4" style="max-width:1100px">
+  <header class="d-flex align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <div class="brand-icon"><i class="bi bi-slack"></i></div>
+      <div>
+        <h1 class="h4 mb-0">AI Engineering Daily</h1>
+        <div class="text-secondary small" data-i18n="Send hand-written messages to Slack and track what was posted.">Send hand-written messages to Slack and track what was posted.</div>
+      </div>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Language">
+      <button type="button" class="btn btn-outline-secondary" data-lang="vi">VI</button>
+      <button type="button" class="btn btn-outline-secondary" data-lang="en">EN</button>
+    </div>
   </header>
 
-  <form id="f" class="grid" novalidate>
-    <section class="card">
-      <h2>Compose</h2>
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tabCompose" type="button" role="tab" aria-selected="true">
+        <i class="bi bi-pencil-square me-1"></i><span data-i18n="Manual Slack Post">Manual Slack Post</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tabPosted" type="button" role="tab" aria-selected="false">
+        <i class="bi bi-clock-history me-1"></i><span data-i18n="Posted messages">Posted messages</span>
+        <span class="badge text-bg-secondary ms-1" id="nTab">0</span>
+      </button>
+    </li>
+  </ul>
 
-      <div class="field">
-        <div class="field-head">
-          <label for="title">Title</label>
-          <span class="count" id="tcount">0 / 150</span>
-        </div>
-        <input id="title" type="text" maxlength="150" placeholder="e.g. Maintenance tonight at 22:00" autocomplete="off">
-      </div>
-
-      <div class="field">
-        <div class="field-head">
-          <label for="text">Message</label>
-          <span class="count" id="count">0 / 3500</span>
-        </div>
-        <div class="toolbar" role="toolbar" aria-label="Formatting">
-          <button type="button" class="tool" data-wrap="*" title="Bold">B</button>
-          <button type="button" class="tool" data-wrap="_" title="Italic"><i>I</i></button>
-          <button type="button" class="tool" data-wrap="`" title="Code">&lt;/&gt;</button>
-          <button type="button" class="tool" id="linkBtn" title="Link">Link</button>
-        </div>
-        <textarea id="text" maxlength="3500" placeholder="Write your message here..."></textarea>
-      </div>
-
-      <div class="field">
-        <div class="field-head">
-          <span class="lbl">Images <small style="font-weight:400;color:var(--muted)">(optional)</small></span>
-          <span class="count" id="icount">0 / 10</span>
-        </div>
-        <div class="drop" id="drop">
-          <div class="drop-row">
-            <button type="button" class="btn" id="addImg">Add images</button>
-            <span>or drag and drop, or paste (Ctrl + V) in the message box</span>
+  <!-- Tab 1: compose -->
+  <form id="f" class="row g-4" novalidate>
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between"><label class="form-label fw-semibold" for="title" data-i18n="Title">Title</label><span class="count" id="tcount">0 / 150</span></div>
+            <input id="title" class="form-control" type="text" maxlength="150" autocomplete="off" data-i18n-ph="e.g. Maintenance tonight at 22:00" placeholder="e.g. Maintenance tonight at 22:00">
           </div>
-          <input id="imgInput" type="file" accept="image/*" multiple hidden>
-          <div class="thumbs" id="thumbs"></div>
-        </div>
-      </div>
 
-      <div class="field">
-        <div class="lbl" style="margin-bottom:8px">When to send</div>
-        <div class="seg" role="group" aria-label="When to send">
-          <button type="button" id="modeNow" aria-pressed="true">Send now</button>
-          <button type="button" id="modeLater" aria-pressed="false">Schedule</button>
-        </div>
-        <div id="sched">
-          <input id="when" type="datetime-local" aria-label="Schedule time">
-          <div class="chips">
-            <button type="button" class="chip" data-preset="hour">In 1 hour</button>
-            <button type="button" class="chip" data-preset="tomorrow">Tomorrow 09:00</button>
-            <button type="button" class="chip" data-preset="monday">Next Monday 09:00</button>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between"><label class="form-label fw-semibold" for="text" data-i18n="Message">Message</label><span class="count" id="count">0 / 3500</span></div>
+            <div class="editor-bar" role="toolbar">
+              <button type="button" class="btn btn-sm text-body" data-wrap="*" data-i18n-title="Bold" title="Bold"><i class="bi bi-type-bold"></i></button>
+              <button type="button" class="btn btn-sm text-body" data-wrap="_" data-i18n-title="Italic" title="Italic"><i class="bi bi-type-italic"></i></button>
+              <button type="button" class="btn btn-sm text-body" data-wrap="`" data-i18n-title="Code" title="Code"><i class="bi bi-code-slash"></i></button>
+              <button type="button" class="btn btn-sm text-body" id="linkBtn" data-i18n-title="Link" title="Link"><i class="bi bi-link-45deg"></i></button>
+            </div>
+            <textarea id="text" class="form-control" maxlength="3500" data-i18n-ph="Write your message here..." placeholder="Write your message here..."></textarea>
           </div>
-          <div class="summary" id="summary"></div>
-        </div>
-      </div>
 
-      <button class="primary" id="btn" type="submit" disabled>Send now</button>
-      <div class="kbd">Ctrl + Enter to send</div>
-    </section>
-
-    <aside class="card">
-      <h2>Preview</h2>
-      <div class="slack">
-        <div class="who">
-          <div class="avatar">AI</div>
-          <div style="min-width:0;flex:1">
-            <div class="name">AI Engineering Daily<small id="stamp"></small></div>
-            <div class="msg" id="preview"></div>
-            <div class="pimgs" id="pimgs"></div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span class="fw-semibold"><span data-i18n="Images">Images</span> <small class="text-secondary fw-normal" data-i18n="(optional)">(optional)</small></span>
+              <span class="count" id="icount">0 / 10</span>
+            </div>
+            <div class="drop mt-1" id="drop">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="addImg"><i class="bi bi-image me-1"></i><span data-i18n="Add images">Add images</span></button>
+                <span class="text-secondary small" data-i18n="or drag and drop, or paste (Ctrl + V) in the message box">or drag and drop, or paste (Ctrl + V) in the message box</span>
+              </div>
+              <input id="imgInput" type="file" accept="image/*" multiple hidden>
+              <div class="thumbs" id="thumbs"></div>
+            </div>
           </div>
+
+          <div class="mb-3">
+            <div class="fw-semibold mb-2" data-i18n="When to send">When to send</div>
+            <div class="btn-group" role="group" aria-label="When to send">
+              <button type="button" class="btn btn-primary" id="modeNow"><i class="bi bi-send me-1"></i><span data-i18n="Send now">Send now</span></button>
+              <button type="button" class="btn btn-outline-primary" id="modeLater"><i class="bi bi-calendar-event me-1"></i><span data-i18n="Schedule">Schedule</span></button>
+            </div>
+            <div id="sched" class="mt-3" hidden>
+              <input id="when" class="form-control" type="datetime-local" data-i18n-title="Schedule time" title="Schedule time">
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-preset="hour" data-i18n="In 1 hour">In 1 hour</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-preset="tomorrow" data-i18n="Tomorrow 09:00">Tomorrow 09:00</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-preset="monday" data-i18n="Next Monday 09:00">Next Monday 09:00</button>
+              </div>
+              <div class="small text-secondary mt-2" id="summary"></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg w-100" id="btn" type="submit" disabled>Send now</button>
+          <div class="text-center count mt-2" data-i18n="Ctrl + Enter to send">Ctrl + Enter to send</div>
         </div>
       </div>
-      <ul class="tips">
-        <li><code>*bold*</code> <code>_italic_</code> <code>`code`</code> <code>&lt;https://url|label&gt;</code></li>
-        <li>The title is posted in bold above the message.</li>
-        <li>Scheduled messages can be set 1 minute to 120 days ahead.</li>
-        <li>Up to 10 images, resized in your browser to about 3 MB in total. GIFs are sent as a still image.</li>
-      </ul>
-    </aside>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <div class="text-uppercase fw-bold text-secondary small mb-3" data-i18n="Preview">Preview</div>
+          <div class="slack">
+            <div class="d-flex gap-2">
+              <div class="avatar">AI</div>
+              <div style="min-width:0;flex:1">
+                <div class="fw-bold">AI Engineering Daily <small class="text-secondary fw-normal ms-1" id="stamp"></small></div>
+                <div class="msg" id="preview"></div>
+                <div class="pimgs" id="pimgs"></div>
+              </div>
+            </div>
+          </div>
+          <ul class="small text-secondary mt-3 mb-0 ps-3">
+            <li><code>*bold*</code> <code>_italic_</code> <code>`code`</code> <code>&lt;https://url|label&gt;</code></li>
+            <li data-i18n="The title is posted in bold above the message.">The title is posted in bold above the message.</li>
+            <li data-i18n="Scheduled messages can be set 1 minute to 120 days ahead.">Scheduled messages can be set 1 minute to 120 days ahead.</li>
+            <li data-i18n="Up to 10 images, resized in your browser to about 3 MB in total. GIFs are sent as a still image.">Up to 10 images, resized in your browser to about 3 MB in total. GIFs are sent as a still image.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </form>
 
-  <section class="card" id="activity">
-    <div class="act-head">
-      <h2 style="margin:0">Posted messages</h2>
-      <button type="button" class="btn" id="refresh">Refresh</button>
+  <!-- Tab 2: posted messages -->
+  <div id="panelPosted" hidden>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div class="btn-group btn-group-sm" role="group" aria-label="Filter">
+        <button type="button" class="btn btn-primary" data-filter="all" data-i18n="All">All</button>
+        <button type="button" class="btn btn-outline-primary" data-filter="daily" data-i18n="Daily">Daily</button>
+        <button type="button" class="btn btn-outline-primary" data-filter="manual" data-i18n="Manual">Manual</button>
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="refresh"><i class="bi bi-arrow-clockwise me-1"></i><span data-i18n="Refresh">Refresh</span></button>
     </div>
-    <div class="sub-head">Posted <span class="badge" id="nSent">0</span></div>
-    <div id="warnSent" class="warn-box" hidden></div>
-    <ul id="listSent" class="list"></ul>
 
-    <div class="sub-head" style="margin-top:22px">Scheduled <span class="badge" id="nSched">0</span></div>
-    <div id="warnSched" class="warn-box" hidden></div>
-    <ul id="listSched" class="list"></ul>
-  </section>
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-transparent fw-bold"><i class="bi bi-check2-circle me-1 text-success"></i><span data-i18n="Posted">Posted</span> <span class="badge text-bg-secondary" id="nSent">0</span></div>
+      <div id="warnSent" class="alert alert-warning small m-3 mb-0" hidden></div>
+      <ul id="listSent" class="list-group list-group-flush"></ul>
+      <div class="card-footer bg-transparent small text-secondary" data-i18n="Click a message to see the full text.">Click a message to see the full text.</div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-transparent fw-bold"><i class="bi bi-calendar-event me-1 text-primary"></i><span data-i18n="Scheduled">Scheduled</span> <span class="badge text-bg-secondary" id="nSched">0</span></div>
+      <div id="warnSched" class="alert alert-warning small m-3 mb-0" hidden></div>
+      <ul id="listSched" class="list-group list-group-flush"></ul>
+    </div>
+  </div>
 </div>
 
 <dialog id="dlg">
-  <h3 id="dlgTitle">Send this message?</h3>
-  <p id="dlgBody"></p>
-  <div class="actions">
-    <button type="button" class="btn" id="dlgCancel">Cancel</button>
-    <button type="button" class="btn go" id="dlgOk">Confirm</button>
+  <h3 class="h5" id="dlgTitle"></h3>
+  <p class="text-secondary mb-0" id="dlgBody"></p>
+  <div class="d-flex justify-content-end gap-2 mt-4">
+    <button type="button" class="btn btn-outline-secondary" id="dlgCancel" data-i18n="Back">Back</button>
+    <button type="button" class="btn btn-primary" id="dlgOk"></button>
   </div>
 </dialog>
 <div id="toast" role="status"></div>
@@ -237,12 +202,39 @@
   const $ = (id) => document.getElementById(id);
   const title = $("title"), text = $("text"), when = $("when"), btn = $("btn");
   const preview = $("preview"), summary = $("summary"), dlg = $("dlg"), toast = $("toast");
-  let later = false, busy = false, onConfirm = null;
+  let later = false, busy = false, onConfirm = null, filter = "all";
   let data = { scheduled: [], sent: [], warnings: [] };
   const MAX_IMAGES = 10, IMAGE_BUDGET = 2800000;
   let images = [];
 
-  const fmt = (d) => d.toLocaleString([], { weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
+  // ---- i18n: source strings are English; other languages come from /locales/<lang>.json (key = English text) ----
+  let LANG = "vi", dict = {};
+  const t = (s, vars) => {
+    let r = Object.prototype.hasOwnProperty.call(dict, s) ? dict[s] : s;
+    for (const k in vars || {}) r = r.split("{" + k + "}").join(vars[k]);
+    return r;
+  };
+  function applyI18n() {
+    document.documentElement.lang = LANG;
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+    document.querySelectorAll("[data-lang]").forEach((b) => {
+      b.classList.toggle("btn-secondary", b.dataset.lang === LANG);
+      b.classList.toggle("btn-outline-secondary", b.dataset.lang !== LANG);
+    });
+    refresh(); renderList(); renderImages();
+  }
+  async function setLang(lang) {
+    LANG = lang; dict = {};
+    if (lang !== "en") {
+      try { dict = await (await fetch("/locales/" + lang + ".json", { cache: "no-cache" })).json(); } catch (e) { dict = {}; }
+    }
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+    applyI18n();
+  }
+
+  const fmt = (d) => d.toLocaleString(LANG === "vi" ? "vi-VN" : [], { weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
   const pad = (n) => String(n).padStart(2, "0");
   const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -257,6 +249,17 @@
       .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g, "$1<i>$2</i>");
   }
 
+  // ---- Tabs ----
+  function showTab(name) {
+    const posted = name === "posted";
+    $("f").hidden = posted; $("panelPosted").hidden = !posted;
+    $("tabCompose").classList.toggle("active", !posted); $("tabPosted").classList.toggle("active", posted);
+    $("tabCompose").setAttribute("aria-selected", String(!posted)); $("tabPosted").setAttribute("aria-selected", String(posted));
+    try { history.replaceState(null, "", posted ? "#posted" : "#"); } catch (e) {}
+    if (posted) loadActivity();
+  }
+
+  // ---- Compose ----
   function scheduledAt() {
     if (!later || !when.value) return null;
     const d = new Date(when.value);
@@ -265,10 +268,10 @@
   function scheduleError() {
     const d = scheduledAt();
     if (!later) return "";
-    if (!d) return "Pick a date and time";
+    if (!d) return t("Pick a date and time");
     const lead = d.getTime() - Date.now();
-    if (lead < 60000) return "Time must be at least 1 minute from now";
-    if (lead > 120 * 86400000) return "Time must be within 120 days";
+    if (lead < 60000) return t("Time must be at least 1 minute from now");
+    if (lead > 120 * 86400000) return t("Time must be within 120 days");
     return "";
   }
 
@@ -276,23 +279,23 @@
     $("tcount").textContent = title.value.length + " / 150";
     $("count").textContent = text.value.length + " / 3500";
     $("count").classList.toggle("warn", text.value.length > 3300);
-    const t = title.value.trim(), b = text.value.trim();
-    preview.innerHTML = (t || b)
-      ? (t ? "<b>" + esc(t) + "</b>" + (b ? "\n\n" : "") : "") + mrkdwn(b)
-      : '<span class="empty">Your message will appear here</span>';
+    const ti = title.value.trim(), b = text.value.trim();
+    preview.innerHTML = (ti || b)
+      ? (ti ? "<b>" + esc(ti) + "</b>" + (b ? "\n\n" : "") : "") + mrkdwn(b)
+      : '<span class="empty">' + esc(t("Your message will appear here")) + "</span>";
     const d = scheduledAt(), err = scheduleError();
-    $("stamp").textContent = later && d ? "scheduled " + fmt(d) : "now";
-    summary.textContent = later ? (err || "Will be sent on " + fmt(d)) : "";
-    summary.style.color = later && err && when.value ? "var(--err)" : "";
-    btn.textContent = later ? "Schedule message" : "Send now";
-    btn.disabled = busy || !t || !b || !!err;
+    $("stamp").textContent = later && d ? t("scheduled {when}", { when: fmt(d) }) : t("now");
+    summary.textContent = later ? (err || t("Will be sent on {when}", { when: fmt(d) })) : "";
+    summary.classList.toggle("text-danger", !!(later && err && when.value));
+    btn.textContent = busy ? btn.textContent : (later ? t("Schedule message") : t("Send now"));
+    btn.disabled = busy || !ti || !b || !!err;
   }
 
   function setMode(isLater) {
     later = isLater;
-    $("modeNow").setAttribute("aria-pressed", String(!later));
-    $("modeLater").setAttribute("aria-pressed", String(later));
-    $("sched").classList.toggle("on", later);
+    $("modeNow").className = "btn " + (later ? "btn-outline-primary" : "btn-primary");
+    $("modeLater").className = "btn " + (later ? "btn-primary" : "btn-outline-primary");
+    $("sched").hidden = !later;
     if (later && !when.value) applyPreset("hour");
     refresh();
   }
@@ -312,7 +315,7 @@
     text.focus(); text.setSelectionRange(s + 1, e + 1); refresh();
   }
   function insertLink() {
-    const url = prompt("Link URL (https://...)");
+    const url = prompt(t("Link URL (https://...)"));
     if (!url || !/^https:\/\//i.test(url)) return;
     const s = text.selectionStart, e = text.selectionEnd, v = text.value;
     const label = v.slice(s, e) || "link";
@@ -330,7 +333,7 @@
     const files = Array.from(list || []).filter((f) => f.type.startsWith("image/"));
     if (!files.length) return;
     const room = MAX_IMAGES - images.length;
-    if (files.length > room) showToast("Up to " + MAX_IMAGES + " images per message", true);
+    if (files.length > room) showToast(t("Up to {n} images per message", { n: MAX_IMAGES }), true);
     files.slice(0, Math.max(room, 0)).forEach((file) => images.push({ file, url: URL.createObjectURL(file) }));
     renderImages();
   }
@@ -343,7 +346,7 @@
       const box = document.createElement("div"); box.className = "thumb";
       const img = document.createElement("img"); img.src = m.url; img.alt = m.file.name;
       const x = document.createElement("button");
-      x.type = "button"; x.textContent = "×"; x.title = "Remove"; x.setAttribute("aria-label", "Remove image");
+      x.type = "button"; x.textContent = "×"; x.title = t("Remove"); x.setAttribute("aria-label", t("Remove image"));
       x.addEventListener("click", () => removeImage(i));
       box.append(img, x); th.appendChild(box);
       const big = document.createElement("img"); big.src = m.url; big.alt = ""; pv.appendChild(big);
@@ -383,11 +386,11 @@
 
   async function send() {
     const d = scheduledAt(), wasLater = later;
-    busy = true; refresh(); btn.textContent = later ? "Scheduling..." : "Sending...";
+    busy = true; btn.textContent = wasLater ? t("Scheduling...") : t("Sending..."); btn.disabled = true;
     let imgs = [];
     try { imgs = await prepareImages(); }
     catch (err) {
-      showToast(err.message === "too_big" ? "Images are too large in total, remove some" : "Could not read one of the images", true);
+      showToast(err.message === "too_big" ? t("Images are too large in total, remove some") : t("Could not read one of the images"), true);
       busy = false; refresh(); return;
     }
     try {
@@ -397,30 +400,31 @@
       });
       const res = await r.json().catch(() => ({}));
       if (r.ok) {
-        showToast(later ? "Scheduled for " + fmt(d) : "Message sent to Slack");
+        showToast(wasLater ? t("Scheduled for {when}", { when: fmt(d) }) : t("Message sent to Slack"));
         title.value = ""; text.value = ""; when.value = ""; clearImages(); setMode(false);
         setTimeout(loadActivity, 1500);
-      } else showToast(res.message || (r.status === 413 ? "Images are too large in total" : "Error " + r.status), true);
-    } catch (err) { showToast("Network error, nothing was sent", true); }
+      } else showToast(res.message ? t(res.message) : (r.status === 413 ? t("Images are too large in total") : t("Error {code}", { code: r.status })), true);
+    } catch (err) { showToast(t("Network error, nothing was sent"), true); }
     busy = false; refresh();
   }
 
+  function openDialog(heading, body, okLabel, action) {
+    $("dlgTitle").textContent = heading; $("dlgBody").textContent = body; $("dlgOk").textContent = okLabel;
+    onConfirm = action; dlg.showModal();
+  }
   function askConfirm() {
     if (btn.disabled) return;
-    onConfirm = null;
-    const d = scheduledAt();
-    const imgNote = images.length ? " with " + images.length + (images.length === 1 ? " image" : " images") : "";
-    $("dlgTitle").textContent = later ? "Schedule this message?" : "Send this message now?";
-    $("dlgBody").innerHTML = later
-      ? 'It will be posted to the Slack channel' + imgNote + ' on <span class="when">' + esc(fmt(d)) + "</span>."
-      : "It will be posted to the Slack channel" + imgNote + " right away.";
-    $("dlgOk").textContent = later ? "Schedule" : "Send";
-    dlg.showModal();
+    const d = scheduledAt(), n = images.length;
+    const key = n
+      ? (later ? "It will be posted to the Slack channel with {n} image(s) on {when}." : "It will be posted to the Slack channel with {n} image(s) right away.")
+      : (later ? "It will be posted to the Slack channel on {when}." : "It will be posted to the Slack channel right away.");
+    openDialog(later ? t("Schedule this message?") : t("Send this message now?"),
+      t(key, { when: d ? fmt(d) : "", n }), later ? t("Schedule") : t("Send"), send);
   }
 
   $("f").addEventListener("submit", (e) => { e.preventDefault(); askConfirm(); });
   $("dlgCancel").addEventListener("click", () => dlg.close());
-  $("dlgOk").addEventListener("click", () => { dlg.close(); (onConfirm || send)(); });
+  $("dlgOk").addEventListener("click", () => { dlg.close(); if (onConfirm) onConfirm(); });
   $("modeNow").addEventListener("click", () => setMode(false));
   $("modeLater").addEventListener("click", () => setMode(true));
   $("linkBtn").addEventListener("click", insertLink);
@@ -438,69 +442,80 @@
   }));
   document.querySelectorAll("[data-wrap]").forEach((b) => b.addEventListener("click", () => wrapSel(b.dataset.wrap)));
   document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
+  document.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => setLang(b.dataset.lang)));
   [title, text, when].forEach((el) => el.addEventListener("input", refresh));
   document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !dlg.open) { e.preventDefault(); askConfirm(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !dlg.open && !$("f").hidden) { e.preventDefault(); askConfirm(); }
   });
-  // ---- Activity list (scheduled + sent), read from Slack ----
+  $("tabCompose").addEventListener("click", () => showTab("compose"));
+  $("tabPosted").addEventListener("click", () => showTab("posted"));
+
+  // ---- Posted messages (scheduled + sent), read from Slack ----
   function split(raw) {
-    const t = String(raw || "").replace(/\r/g, "").trim();
-    const i = t.indexOf("\n");
-    const first = (i < 0 ? t : t.slice(0, i)).trim();
-    const rest = i < 0 ? "" : t.slice(i + 1).trim();
+    const s = String(raw || "").replace(/\r/g, "").trim();
+    const i = s.indexOf("\n");
+    const first = (i < 0 ? s : s.slice(0, i)).trim();
+    const rest = i < 0 ? "" : s.slice(i + 1).trim();
     const m = first.match(/^\*(.+)\*$/);
-    return { title: m ? m[1] : first || "(empty)", body: rest };
+    return { title: m ? m[1] : first || t("(empty)"), body: rest };
+  }
+  const isDaily = (ti) => /^AI Engineering Daily/.test(ti);
+  function badge(cls, label) {
+    const s = document.createElement("span"); s.className = "badge rounded-pill " + cls; s.textContent = label; return s;
   }
   function fill(ul, rows, emptyText, build) {
     ul.textContent = "";
     if (!rows.length) {
-      const li = document.createElement("li"); li.className = "none"; li.textContent = emptyText;
+      const li = document.createElement("li"); li.className = "list-group-item text-center text-secondary py-4"; li.textContent = emptyText;
       ul.appendChild(li); return;
     }
     rows.forEach((m) => {
-      const { title: t, body } = split(m.text);
-      const li = document.createElement("li"); li.className = "item"; li.tabIndex = 0;
-      const main = document.createElement("div"); main.className = "item-main";
-      const h = document.createElement("div"); h.className = "item-title"; h.textContent = t;
-      const p = document.createElement("div"); p.className = "item-body"; p.textContent = body;
+      const { title: ti, body } = split(m.text);
+      const li = document.createElement("li"); li.className = "list-group-item post-item d-flex gap-3 justify-content-between align-items-start"; li.tabIndex = 0;
+      const main = document.createElement("div"); main.style.minWidth = "0"; main.style.flex = "1";
+      const h = document.createElement("div"); h.className = "post-title"; h.textContent = ti;
+      const p = document.createElement("div"); p.className = "post-body"; p.textContent = body;
       main.append(h, p);
-      const meta = document.createElement("div"); meta.className = "item-meta";
-      build(m, t, meta);
+      const meta = document.createElement("div"); meta.className = "post-meta d-flex flex-column align-items-end gap-1";
+      build(m, ti, meta);
       li.append(main, meta); ul.appendChild(li);
       const toggle = () => li.classList.toggle("open");
       li.addEventListener("click", (e) => { if (!e.target.closest("button, a")) toggle(); });
       li.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === li) toggle(); });
     });
   }
-  function warnFor(prefix) { return data.warnings.filter((w) => w.startsWith(prefix)).join(" | "); }
+  function warnFor(prefix) { return data.warnings.filter((w) => w.startsWith(prefix)).map((w) => t(w)).join(" | "); }
   function renderList() {
+    const sent = data.sent.filter((m) => {
+      const d = isDaily(split(m.text).title);
+      return filter === "all" || (filter === "daily") === d;
+    });
     $("nSched").textContent = data.scheduled.length;
-    $("nSent").textContent = data.sent.length;
+    $("nSent").textContent = sent.length;
+    $("nTab").textContent = data.sent.length + data.scheduled.length;
     [["warnSent", "Sent"], ["warnSched", "Scheduled"], ["warnSent", "Could not"]].forEach(([id, pre]) => {
       const w = $(id), msg = warnFor(pre);
       if (msg) { w.textContent = msg; w.hidden = false; } else if (pre !== "Could not") w.hidden = true;
     });
-    fill($("listSent"), data.sent, "No posted messages found", (m, t, meta) => {
-      const tag = document.createElement("span"); tag.className = "tag";
-      tag.textContent = /^AI Engineering Daily/.test(t) ? "Daily" : "Manual";
-      const when = document.createElement("div"); when.textContent = fmt(new Date(parseFloat(m.ts) * 1000));
-      meta.append(tag, when);
+    fill($("listSent"), sent, t("No posted messages found"), (m, ti, meta) => {
+      meta.append(badge(isDaily(ti) ? "text-bg-info" : "text-bg-secondary", isDaily(ti) ? t("Daily") : t("Manual")));
+      const w = document.createElement("div"); w.textContent = fmt(new Date(parseFloat(m.ts) * 1000)); meta.append(w);
       if (m.images) {
-        const im = document.createElement("div"); im.textContent = m.images + (m.images > 1 ? " images" : " image");
-        meta.append(im);
+        const im = document.createElement("div");
+        im.innerHTML = '<i class="bi bi-image me-1"></i>'; im.append(t("{n} image(s)", { n: m.images })); meta.append(im);
       }
       if (m.link) {
         const a = document.createElement("a"); a.href = m.link; a.target = "_blank"; a.rel = "noopener noreferrer";
-        a.textContent = "Open in Slack"; meta.append(a);
+        a.textContent = t("Open in Slack"); meta.append(a);
       }
     });
-    fill($("listSched"), data.scheduled, "No scheduled messages", (m, t, meta) => {
-      const tag = document.createElement("span"); tag.className = "tag sched"; tag.textContent = "Scheduled";
-      const when = document.createElement("div"); when.textContent = fmt(new Date(m.post_at * 1000));
+    fill($("listSched"), data.scheduled, t("No scheduled messages"), (m, ti, meta) => {
+      meta.append(badge("text-bg-primary", t("Scheduled")));
+      const w = document.createElement("div"); w.textContent = fmt(new Date(m.post_at * 1000)); meta.append(w);
       const c = document.createElement("button");
-      c.type = "button"; c.className = "btn small"; c.textContent = "Cancel";
-      c.addEventListener("click", () => askCancel(m, t));
-      meta.append(tag, when, c);
+      c.type = "button"; c.className = "btn btn-outline-danger btn-sm"; c.textContent = t("Cancel");
+      c.addEventListener("click", () => askCancel(m, ti));
+      meta.append(c);
     });
   }
   async function loadActivity() {
@@ -511,23 +526,35 @@
     } catch (e) { data = { scheduled: [], sent: [], warnings: ["Could not load activity"] }; }
     $("refresh").disabled = false; renderList();
   }
-  function askCancel(m, t) {
-    $("dlgTitle").textContent = "Cancel this scheduled message?";
-    $("dlgBody").textContent = "\"" + t + "\" planned for " + fmt(new Date(m.post_at * 1000)) + " will not be sent.";
-    $("dlgOk").textContent = "Cancel message";
-    onConfirm = async () => {
-      try {
-        const r = await fetch("/api/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: m.id }) });
-        const res = await r.json().catch(() => ({}));
-        showToast(res.message || "Error " + r.status, !r.ok);
-      } catch (e) { showToast("Network error", true); }
-      loadActivity();
-    };
-    dlg.showModal();
+  function askCancel(m, ti) {
+    openDialog(t("Cancel this scheduled message?"),
+      t("\"{title}\" planned for {when} will not be sent.", { title: ti, when: fmt(new Date(m.post_at * 1000)) }),
+      t("Cancel message"), async () => {
+        try {
+          const r = await fetch("/api/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: m.id }) });
+          const res = await r.json().catch(() => ({}));
+          showToast(res.message ? t(res.message) : t("Error {code}", { code: r.status }), !r.ok);
+        } catch (e) { showToast(t("Network error"), true); }
+        loadActivity();
+      });
   }
   $("refresh").addEventListener("click", loadActivity);
+  document.querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach((x) => { x.className = "btn " + (x === b ? "btn-primary" : "btn-outline-primary"); });
+    renderList();
+  }));
+
+  // ---- Boot ----
+  const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+  const applyTheme = () => document.documentElement.setAttribute("data-bs-theme", darkMq.matches ? "dark" : "light");
+  applyTheme(); darkMq.addEventListener("change", applyTheme);
+  let saved = "vi";
+  try { saved = localStorage.getItem("lang") || "vi"; } catch (e) {}
+  setMode(false); renderImages();
+  setLang(saved === "en" ? "en" : "vi");
   loadActivity();
-  refresh();
+  if (location.hash === "#posted") showTab("posted");
 </script>
 </body>
 </html>
