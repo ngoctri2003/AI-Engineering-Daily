@@ -5,22 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Manual Slack Post</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <style>
   body { background:var(--bs-tertiary-bg); }
   [data-bs-theme=light] body { background:linear-gradient(180deg,#eef3ff 0,#f8faff 260px,#ffffff 100%); background-attachment:fixed; }
   [data-bs-theme=light] .card { border-color:#e3e8f4; box-shadow:0 2px 12px rgba(40,70,140,.08) !important; }
-  [data-bs-theme=light] .brand-icon { background:linear-gradient(135deg,#4f7cff,#7b5cff); }
   [data-bs-theme=light] .editor-bar, [data-bs-theme=light] .drop { background:#f6f8fd; }
-  .brand-icon { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--bs-primary); color:#fff; font-size:22px; flex:none; }
+  .brand-icon { width:56px; height:56px; object-fit:contain; flex:none; }
   .nav-tabs .nav-link { font-weight:600; color:var(--bs-secondary-color); }
   .nav-tabs .nav-link.active { color:var(--bs-primary); }
   .card { border-radius:14px; }
-  .login-card { max-width:860px; margin-top:5vh; border-radius:20px; }
+  #loginView:not([hidden]) { display:flex; align-items:center; justify-content:center; min-height:calc(100vh - 170px); padding-bottom:40px; }
+  .login-card { width:100%; max-width:860px; border-radius:20px; }
   [data-bs-theme=light] .login-card { box-shadow:0 16px 48px rgba(40,70,140,.16) !important; }
   .login-hero { background:linear-gradient(145deg,#4f7cff,#7b5cff); min-height:420px; }
-  .login-icon { width:52px; height:52px; border-radius:14px; display:grid; place-items:center; background:rgba(255,255,255,.2); color:#fff; font-size:26px; }
+  .login-logo { width:100%; max-width:220px; align-self:center; filter:drop-shadow(0 8px 16px rgba(0,0,0,.25)); }
   .login-card .form-control { height:calc(3.5rem + 2px); }
   .count { font-size:12px; color:var(--bs-secondary-color); font-variant-numeric:tabular-nums; }
   .count.warn { color:var(--bs-danger); }
@@ -71,7 +74,7 @@
 <div class="container py-4" style="max-width:1100px">
   <header class="d-flex align-items-center justify-content-between gap-3 mb-4">
     <div class="d-flex align-items-center gap-3">
-      <div class="brand-icon"><i class="bi bi-slack"></i></div>
+      <img class="brand-icon" src="/logo.png" alt="AI Engineering Daily">
       <div>
         <h1 class="h4 mb-0">AI Engineering Daily</h1>
         <div class="text-secondary small" data-i18n="Send hand-written messages to Slack and track what was posted.">Send hand-written messages to Slack and track what was posted.</div>
@@ -92,10 +95,9 @@
   <div id="loginView" hidden>
     <div class="card login-card mx-auto overflow-hidden">
       <div class="row g-0">
-        <div class="col-md-5 login-hero d-none d-md-flex flex-column justify-content-between p-4 text-white">
-          <div class="login-icon"><i class="bi bi-slack"></i></div>
+        <div class="col-md-5 login-hero d-none d-md-flex flex-column justify-content-center align-items-center gap-4 p-4 text-center text-white">
+          <img class="login-logo" src="/logo.png" alt="AI Engineering Daily">
           <div>
-            <div class="h4 fw-bold mb-2">AI Engineering Daily</div>
             <div class="small opacity-75" data-i18n="Send hand-written messages to Slack and track what was posted.">Send hand-written messages to Slack and track what was posted.</div>
           </div>
         </div>
