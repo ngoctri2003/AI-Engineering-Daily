@@ -189,6 +189,11 @@
       "date": "2026-10-23T01:30:19.238123+00:00",
       "headline": "GitHub Copilot usage metrics API hiển thị theo tên skills, custom agents và MCP server của tổ chức",
       "url": "https://github.blog/changelog/2026-10-22-custom-skills-agents-and-mcp-servers-in-usage-metrics-api"
+    },
+    {
+      "date": "2026-10-26T01:30:38.148516+00:00",
+      "headline": "Bài dev.to: AI rút ngắn chu kỳ khai thác lỗ hổng từ tuần xuống còn giờ, đội nhỏ có nguy cơ tụt lại",
+      "url": "https://dev.to/james_anderson_h/security-changed-with-ai-and-small-teams-are-falling-behind-5ebg"
     }
   ]
 }
