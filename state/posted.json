@@ -194,6 +194,21 @@
       "date": "2026-10-26T01:30:38.148516+00:00",
       "headline": "Bài dev.to: AI rút ngắn chu kỳ khai thác lỗ hổng từ tuần xuống còn giờ, đội nhỏ có nguy cơ tụt lại",
       "url": "https://dev.to/james_anderson_h/security-changed-with-ai-and-small-teams-are-falling-behind-5ebg"
+    },
+    {
+      "date": "2026-10-27T01:30:20.726661+00:00",
+      "headline": "Claude Code v2.1.311 thêm --hold-idle-file cho self-hosted runner, sửa lỗi subagent không gọi được MCP tools",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.311"
+    },
+    {
+      "date": "2026-10-27T01:30:20.726661+00:00",
+      "headline": "GitHub Copilot đưa GPT-6.1 Terra lên GA, định vị cho agentic coding và terminal với chi phí thấp hơn GPT-6.1 Sol",
+      "url": "https://github.blog/changelog/2026-10-26-gpt-6-1-terra-in-github-copilot"
+    },
+    {
+      "date": "2026-10-27T01:30:20.726661+00:00",
+      "headline": "Greptile dùng GPT-6 Astra để mở rộng code review sang bug detection qua kiểm thử luồng người dùng",
+      "url": "https://openai.com/index/greptile-code-review-codex-astra"
     }
   ]
 }
