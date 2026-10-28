@@ -69,6 +69,54 @@
       ],
       "headline": "Next.js: Unauthenticated Remote Code Execution in `use cache` functions returning typed arrays",
       "url": "https://github.com/advisories/GHSA-673q-mjm6-r5xr "
+    },
+    {
+      "date": "2026-10-28T01:30:36.407127+00:00",
+      "ids": [
+        "CVE-2026-117860",
+        "CVE-2026-117861",
+        "CVE-2026-117862",
+        "CVE-2026-117863",
+        "CVE-2026-117864",
+        "CVE-2026-117865",
+        "CVE-2026-117866",
+        "CVE-2026-117867",
+        "CVE-2026-117868",
+        "CVE-2026-117869",
+        "CVE-2026-117870",
+        "CVE-2026-117871",
+        "CVE-2026-117872",
+        "CVE-2026-117873",
+        "CVE-2026-118005",
+        "CVE-2026-109705",
+        "CVE-2026-109707",
+        "CVE-2026-109708",
+        "CVE-2026-117874",
+        "CVE-2026-117876",
+        "CVE-2026-117878"
+      ],
+      "headline": "Security Vulnerabilities fixed in Firefox ESR 115.44",
+      "url": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-119/"
+    },
+    {
+      "date": "2026-10-28T01:30:36.407127+00:00",
+      "ids": [
+        "CVE-2026-118306",
+        "CVE-2026-118331",
+        "CVE-2026-118348",
+        "CVE-2026-118344",
+        "CVE-2026-118357"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_0562499947.html"
+    },
+    {
+      "date": "2026-10-28T01:30:36.407127+00:00",
+      "ids": [
+        "CVE-2026-48356"
+      ],
+      "headline": "Adobe Commerce and Magento Unrestricted Upload of File with Dangerous Type Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-48356"
     }
   ]
 }

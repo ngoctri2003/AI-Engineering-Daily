@@ -209,6 +209,21 @@
       "date": "2026-10-27T01:30:20.726661+00:00",
       "headline": "Greptile dùng GPT-6 Astra để mở rộng code review sang bug detection qua kiểm thử luồng người dùng",
       "url": "https://openai.com/index/greptile-code-review-codex-astra"
+    },
+    {
+      "date": "2026-10-28T01:30:36.407127+00:00",
+      "headline": "Claude Code v2.1.312 thêm oidc.user_id_claim cho Claude apps gateway, sửa lỗi ghi đè CLAUDE.md lớn",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.312"
+    },
+    {
+      "date": "2026-10-28T01:30:36.407127+00:00",
+      "headline": "OpenAI Codex 0.165.0 thêm provider Vertex AI, bật memory v2 mặc định và cho đổi reasoning effort giữa hội thoại",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.165.0"
+    },
+    {
+      "date": "2026-10-28T01:30:36.407127+00:00",
+      "headline": "GitHub Copilot đưa assisted permissions lên GA trong CLI, Copilot app và Visual Studio Code",
+      "url": "https://github.blog/changelog/2026-10-26-github-copilot-assisted-permissions-generally-available"
     }
   ]
 }
