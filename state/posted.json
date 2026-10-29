@@ -224,6 +224,21 @@
       "date": "2026-10-28T01:30:36.407127+00:00",
       "headline": "GitHub Copilot đưa assisted permissions lên GA trong CLI, Copilot app và Visual Studio Code",
       "url": "https://github.blog/changelog/2026-10-26-github-copilot-assisted-permissions-generally-available"
+    },
+    {
+      "date": "2026-10-29T01:30:42.538952+00:00",
+      "headline": "GitHub Agentic Workflows chính thức GA, tự động hóa tác vụ cần suy luận như issue triage và phân tích CI failure",
+      "url": "https://github.blog/changelog/2026-10-28-github-agentic-workflows-generally-available"
+    },
+    {
+      "date": "2026-10-29T01:30:42.538952+00:00",
+      "headline": "GitHub Copilot Fusion chính thức GA, tự động định tuyến và điều phối model thay vì chọn model cho từng task",
+      "url": "https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion"
+    },
+    {
+      "date": "2026-10-29T01:30:42.538952+00:00",
+      "headline": "GitHub Copilot Automations cho phép team dùng chung workflow AI, kết hợp prompt, trigger và tool",
+      "url": "https://github.blog/changelog/2026-10-28-build-shared-workflows-for-your-team-with-copilot-automations"
     }
   ]
 }
