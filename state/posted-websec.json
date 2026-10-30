@@ -117,6 +117,43 @@
       ],
       "headline": "Adobe Commerce and Magento Unrestricted Upload of File with Dangerous Type Vulnerability",
       "url": "https://www.cve.org/CVERecord?id=CVE-2026-48356"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "ids": [
+        "CVE-2026-76024",
+        "CVE-2026-76025",
+        "CVE-2026-76026",
+        "CVE-2026-76027",
+        "CVE-2026-76028",
+        "CVE-2026-76029"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02107719452.html"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "ids": [
+        "CVE-2026-97229"
+      ],
+      "headline": "GitLab Community Edition and Enterprise Edition Integer Overflow or Wraparound Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-97229"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "ids": [
+        "CVE-2026-76418"
+      ],
+      "headline": "Cisco Secure Firewall ASA Software and Cisco Secure FTD Software Unchecked Return Value to NULL Pointer Dereference Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-76418"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "ids": [
+        "CVE-2026-46300"
+      ],
+      "headline": "Linux Kernel Missing Initialization of a Variable Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-46300"
     }
   ]
 }

@@ -239,6 +239,21 @@
       "date": "2026-10-29T01:30:42.538952+00:00",
       "headline": "GitHub Copilot Automations cho phép team dùng chung workflow AI, kết hợp prompt, trigger và tool",
       "url": "https://github.blog/changelog/2026-10-28-build-shared-workflows-for-your-team-with-copilot-automations"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "headline": "Claude Code v2.1.314 thêm permissions.blockWritesOutsideWorkingDirectories, chặn Write, Edit và NotebookEdit ghi ra ngoài working directory",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.314"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "headline": "OpenAI Codex 0.166.0 thêm GPT-6.1 Terra vào catalog Vertex AI và Bedrock, bổ sung codex doctor --network-only",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.166.0"
+    },
+    {
+      "date": "2026-10-30T01:30:36.999909+00:00",
+      "headline": "GitHub đưa repository plugin defaults và enterprise plugin controls lên GA trong VS Code, Copilot CLI và GitHub Copilot app",
+      "url": "https://github.blog/changelog/2026-10-28-repository-plugin-defaults-and-enterprise-plugin-controls-generally-available"
     }
   ]
 }
