@@ -254,6 +254,11 @@
       "date": "2026-10-30T01:30:36.999909+00:00",
       "headline": "GitHub đưa repository plugin defaults và enterprise plugin controls lên GA trong VS Code, Copilot CLI và GitHub Copilot app",
       "url": "https://github.blog/changelog/2026-10-28-repository-plugin-defaults-and-enterprise-plugin-controls-generally-available"
+    },
+    {
+      "date": "2026-11-02T01:30:34.674414+00:00",
+      "headline": "Claude Code v2.1.316 thêm CLAUDE_CODE_DISABLE_ULTRATHINK, tắt từ khóa ultrathink",
+      "url": "https://code.claude.com/docs/en/changelog"
     }
   ]
 }
