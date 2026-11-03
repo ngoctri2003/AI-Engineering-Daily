@@ -259,6 +259,21 @@
       "date": "2026-11-02T01:30:34.674414+00:00",
       "headline": "Claude Code v2.1.316 thêm CLAUDE_CODE_DISABLE_ULTRATHINK, tắt từ khóa ultrathink",
       "url": "https://code.claude.com/docs/en/changelog"
+    },
+    {
+      "date": "2026-11-03T01:30:45.040107+00:00",
+      "headline": "Claude Code v2.1.317 thêm cảnh báo connector và xác nhận trước khi gửi email tài khoản ra mạng",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.317"
+    },
+    {
+      "date": "2026-11-03T01:30:45.040107+00:00",
+      "headline": "OpenAI Codex tích hợp Qodo đưa context công ty và coding standard vào AI code review",
+      "url": "https://openai.com/index/qodo-codex-plugin"
+    },
+    {
+      "date": "2026-11-03T01:30:45.040107+00:00",
+      "headline": "GitHub Actions chặn pull_request_target mặc định trên public repo từ 2 tháng 12, 2026",
+      "url": "https://github.blog/changelog/2026-11-02-pull_request_target-blocked-by-default-december-2"
     }
   ]
 }
