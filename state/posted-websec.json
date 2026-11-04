@@ -154,6 +154,33 @@
       ],
       "headline": "Linux Kernel Missing Initialization of a Variable Vulnerability",
       "url": "https://www.cve.org/CVERecord?id=CVE-2026-46300"
+    },
+    {
+      "date": "2026-11-04T01:30:26.341454+00:00",
+      "ids": [
+        "CVE-2026-119977"
+      ],
+      "headline": "WordPress WordPress Core Time-of-check Time-of-use (TOCTOU) Race Condition Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-119977"
+    },
+    {
+      "date": "2026-11-04T01:30:26.341454+00:00",
+      "ids": [
+        "CVE-2026-121156",
+        "CVE-2026-121229",
+        "CVE-2026-121246",
+        "CVE-2026-121035"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop.html"
+    },
+    {
+      "date": "2026-11-04T01:30:26.341454+00:00",
+      "ids": [
+        "CVE-2026-120572"
+      ],
+      "headline": "Security Vulnerabilities fixed in Firefox 159.0.1",
+      "url": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-123/"
     }
   ]
 }

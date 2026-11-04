@@ -274,6 +274,21 @@
       "date": "2026-11-03T01:30:45.040107+00:00",
       "headline": "GitHub Actions chặn pull_request_target mặc định trên public repo từ 2 tháng 12, 2026",
       "url": "https://github.blog/changelog/2026-11-02-pull_request_target-blocked-by-default-december-2"
+    },
+    {
+      "date": "2026-11-04T01:30:26.341454+00:00",
+      "headline": "Claude Code v2.1.318 thêm loginExpiresAt và cảnh báo trước 10 ngày khi đăng nhập claude.ai sắp hết hạn",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.318"
+    },
+    {
+      "date": "2026-11-04T01:30:26.341454+00:00",
+      "headline": "GitHub Copilot usage metrics API tách riêng mức dùng BYOK khỏi model do Copilot host",
+      "url": "https://github.blog/changelog/2026-11-03-byok-and-enterprise-custom-models-in-the-copilot-usage-api"
+    },
+    {
+      "date": "2026-11-04T01:30:26.341454+00:00",
+      "headline": "Dependabot version updates hỗ trợ Agent Package Manager, tự động cập nhật skill, prompt và instructions của AI agent",
+      "url": "https://github.blog/changelog/2026-11-03-dependabot-version-updates-support-agent-package-manager"
     }
   ]
 }
