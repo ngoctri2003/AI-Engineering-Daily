@@ -289,6 +289,21 @@
       "date": "2026-11-04T01:30:26.341454+00:00",
       "headline": "Dependabot version updates hỗ trợ Agent Package Manager, tự động cập nhật skill, prompt và instructions của AI agent",
       "url": "https://github.blog/changelog/2026-11-03-dependabot-version-updates-support-agent-package-manager"
+    },
+    {
+      "date": "2026-11-05T01:30:21.029584+00:00",
+      "headline": "GitHub Copilot có trong JetBrains Air, giao coding task và review kết quả ngay trong IDE",
+      "url": "https://github.blog/changelog/2026-11-03-github-copilot-is-now-available-in-jetbrains-air"
+    },
+    {
+      "date": "2026-11-05T01:30:21.029584+00:00",
+      "headline": "GitHub Copilot có trong coding assistant của Xcode ở public preview, cho dev iOS và macOS",
+      "url": "https://github.blog/changelog/2026-11-04-github-copilot-is-now-available-in-xcodes-coding-assistant"
+    },
+    {
+      "date": "2026-11-05T01:30:21.029584+00:00",
+      "headline": "OpenAI công bố pipeline tự động tìm, xác thực và sinh patch cho 948 lỗ hổng leo quyền cục bộ trong Linux kernel",
+      "url": "https://openai.com/index/a-thousand-fewer-paths-to-root"
     }
   ]
 }
