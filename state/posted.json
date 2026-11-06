@@ -304,6 +304,21 @@
       "date": "2026-11-05T01:30:21.029584+00:00",
       "headline": "OpenAI công bố pipeline tự động tìm, xác thực và sinh patch cho 948 lỗ hổng leo quyền cục bộ trong Linux kernel",
       "url": "https://openai.com/index/a-thousand-fewer-paths-to-root"
+    },
+    {
+      "date": "2026-11-06T01:30:38.863304+00:00",
+      "headline": "Cursor Build Live Apps cho phép cloud agent dựng, deploy và chia sẻ app nội bộ bằng một link",
+      "url": "https://cursor.com/changelog/build-live-apps"
+    },
+    {
+      "date": "2026-11-06T01:30:38.863304+00:00",
+      "headline": "OpenAI giới thiệu GPT-6 Cyber để tìm lỗ hổng có thể khai thác và phát triển bản sửa trong phạm vi được ủy quyền",
+      "url": "https://openai.com/index/introducing-gpt-6-cyber"
+    },
+    {
+      "date": "2026-11-06T01:30:38.863304+00:00",
+      "headline": "JetBrains chia sẻ cách xây RAG pipeline cho tìm kiếm code ngữ nghĩa trong Air Context, phần 2 về storage, search và agent tooling",
+      "url": "https://blog.jetbrains.com/ai/2026/11/building-a-rag-pipeline-for-semantic-code-search-a-developer-diary-and-field-notes-part-2/"
     }
   ]
 }
