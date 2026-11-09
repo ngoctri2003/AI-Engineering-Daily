@@ -319,6 +319,16 @@
       "date": "2026-11-06T01:30:38.863304+00:00",
       "headline": "JetBrains chia sẻ cách xây RAG pipeline cho tìm kiếm code ngữ nghĩa trong Air Context, phần 2 về storage, search và agent tooling",
       "url": "https://blog.jetbrains.com/ai/2026/11/building-a-rag-pipeline-for-semantic-code-search-a-developer-diary-and-field-notes-part-2/"
+    },
+    {
+      "date": "2026-11-09T01:30:29.007961+00:00",
+      "headline": "Apiiro: tùy chọn “Don't Ask Again” của Claude Code làm lộ mật khẩu trong 1.122 file GitHub công khai",
+      "url": "https://apiiro.com/blog/coding-agents-leaking-secrets-github-dont-ask-again"
+    },
+    {
+      "date": "2026-11-09T01:30:29.007961+00:00",
+      "headline": "Tác giả dev.to kể agent báo đã deploy, nhưng container trên server đã cũ một ngày",
+      "url": "https://dev.to/chet103cc/an-agent-told-me-it-deployed-i-asked-the-server-and-the-containers-were-a-day-old-2b6i"
     }
   ]
 }
