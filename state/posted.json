@@ -329,6 +329,21 @@
       "date": "2026-11-09T01:30:29.007961+00:00",
       "headline": "Tác giả dev.to kể agent báo đã deploy, nhưng container trên server đã cũ một ngày",
       "url": "https://dev.to/chet103cc/an-agent-told-me-it-deployed-i-asked-the-server-and-the-containers-were-a-day-old-2b6i"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "headline": "Claude Code v2.1.321 đặt Claude Fable 5.2 làm model mặc định và vá lỗi bảo mật về sandbox, permission, MCP OAuth",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.321"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "headline": "Anthropic ra mắt Claude Fable 5.2 và Claude Mythos 5.2, nhắm vào coding, finance và khoa học",
+      "url": "https://www.anthropic.com/news/announcements"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "headline": "GitHub secret scanning mở rộng sang log của GitHub Actions workflow, đang ở public preview",
+      "url": "https://github.blog/changelog/2026-11-09-secret-scanning-detects-secrets-in-github-actions-workflow-logs"
     }
   ]
 }

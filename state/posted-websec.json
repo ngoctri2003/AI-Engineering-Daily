@@ -181,6 +181,52 @@
       ],
       "headline": "Security Vulnerabilities fixed in Firefox 159.0.1",
       "url": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-123/"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "ids": [
+        "CVE-2026-121842",
+        "CVE-2026-121843"
+      ],
+      "headline": "Security Vulnerabilities fixed in Firefox for iOS 160.0",
+      "url": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-124/"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "ids": [
+        "CVE-2026-125345",
+        "CVE-2026-125347",
+        "CVE-2026-125343",
+        "CVE-2026-125348",
+        "CVE-2026-125344",
+        "CVE-2026-125346"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_018223192.html"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "ids": [
+        "CVE-2026-102895"
+      ],
+      "headline": "GPUStack Improper Authentication Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-102895"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "ids": [
+        "CVE-2026-116779"
+      ],
+      "headline": "SignalWire FreeSwitch Code Injection Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-116779"
+    },
+    {
+      "date": "2026-11-10T01:30:20.631707+00:00",
+      "ids": [
+        "CVE-2026-123158"
+      ],
+      "headline": "OpenBSD OpenSSH Unexpected Status Code or Return Value Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-123158"
     }
   ]
 }
