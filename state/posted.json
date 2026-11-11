@@ -344,6 +344,16 @@
       "date": "2026-11-10T01:30:20.631707+00:00",
       "headline": "GitHub secret scanning mở rộng sang log của GitHub Actions workflow, đang ở public preview",
       "url": "https://github.blog/changelog/2026-11-09-secret-scanning-detects-secrets-in-github-actions-workflow-logs"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "headline": "Claude Code v2.1.322 thêm fast mode trên Vertex ở region global, us và eu",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.322"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "headline": "GitHub tắt Dependabot alerts trên repo không hoạt động trong một năm từ 8/12/2026",
+      "url": "https://github.blog/changelog/2026-11-10-dependabot-alerts-will-pause-on-inactive-repositories"
     }
   ]
 }

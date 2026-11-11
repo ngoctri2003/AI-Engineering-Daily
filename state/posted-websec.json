@@ -227,6 +227,67 @@
       ],
       "headline": "OpenBSD OpenSSH Unexpected Status Code or Return Value Vulnerability",
       "url": "https://www.cve.org/CVERecord?id=CVE-2026-123158"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "ids": [
+        "CVE-2026-125350"
+      ],
+      "headline": "Google Chromium Use-After-Free Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-125350"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "ids": [
+        "CVE-2026-124852",
+        "CVE-2026-124853",
+        "CVE-2026-124854",
+        "CVE-2026-124855",
+        "CVE-2026-124856",
+        "CVE-2026-124857",
+        "CVE-2026-124858",
+        "CVE-2026-124859",
+        "CVE-2026-124860",
+        "CVE-2026-124861",
+        "CVE-2026-124862",
+        "CVE-2026-124863",
+        "CVE-2026-124864",
+        "CVE-2026-124865",
+        "CVE-2026-124866",
+        "CVE-2026-109736",
+        "CVE-2026-124952",
+        "CVE-2026-124872",
+        "CVE-2026-124874",
+        "CVE-2026-124875",
+        "CVE-2026-124876",
+        "CVE-2026-118007"
+      ],
+      "headline": "Security Vulnerabilities fixed in Firefox 160",
+      "url": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-125/"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "ids": [
+        "CVE-2026-123218"
+      ],
+      "headline": "IBM Aspera Faspex Incorrect Authorization Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-123218"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "ids": [
+        "CVE-2026-116606"
+      ],
+      "headline": "Barracuda Networks Email Security Gateway (ESG) Authentication Bypass Using an Alternate Path or Channel Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-116606"
+    },
+    {
+      "date": "2026-11-11T01:30:28.226641+00:00",
+      "ids": [
+        "CVE-2026-111560"
+      ],
+      "headline": "Barracuda Networks Multiple Products OS Command Injection Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-111560"
     }
   ]
 }
