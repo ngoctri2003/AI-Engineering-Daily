@@ -288,6 +288,66 @@
       ],
       "headline": "Barracuda Networks Multiple Products OS Command Injection Vulnerability",
       "url": "https://www.cve.org/CVERecord?id=CVE-2026-111560"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "ids": [
+        "CVE-2026-126885",
+        "CVE-2026-126895",
+        "CVE-2026-126879",
+        "CVE-2026-126846",
+        "CVE-2026-126911",
+        "CVE-2026-126864"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01744469280.html"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "ids": [
+        "CVE-2026-123863",
+        "CVE-2026-123864",
+        "CVE-2026-123865",
+        "CVE-2026-123866",
+        "CVE-2026-123872",
+        "CVE-2026-123874",
+        "CVE-2026-126051",
+        "CVE-2026-123828",
+        "CVE-2026-123867",
+        "CVE-2026-123868",
+        "CVE-2026-123871",
+        "CVE-2026-123875",
+        "CVE-2026-123877",
+        "CVE-2026-123829",
+        "CVE-2026-123862",
+        "CVE-2026-123873"
+      ],
+      "headline": "Node.js 26.13.1 security release",
+      "url": "https://github.com/nodejs/node/releases/tag/v26.13.1"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "ids": [
+        "CVE-2026-20320"
+      ],
+      "headline": "Cisco BroadWorks Improper Restriction of XML External Entity Reference Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-20320"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "ids": [
+        "CVE-2026-124194"
+      ],
+      "headline": "Microsoft Office Outlook Missing User Interaction for Potentially Unsafe Action Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-124194"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "ids": [
+        "CVE-2026-111793"
+      ],
+      "headline": "Openwave Messaging Limited Webtop Media Transcoder Incorrect Resource Transfer Between Spheres Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-111793"
     }
   ]
 }

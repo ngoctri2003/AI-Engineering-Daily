@@ -354,6 +354,21 @@
       "date": "2026-11-11T01:30:28.226641+00:00",
       "headline": "GitHub tắt Dependabot alerts trên repo không hoạt động trong một năm từ 8/12/2026",
       "url": "https://github.blog/changelog/2026-11-10-dependabot-alerts-will-pause-on-inactive-repositories"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "headline": "GitHub Copilot đưa Gemini 4 Carbon lên GA, Google định vị cho coding phức tạp, agentic và secure code generation",
+      "url": "https://github.blog/changelog/2026-11-10-gemini-4-carbon-in-github-copilot"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "headline": "OpenAI Codex 0.167.2 gửi tool update theo kiểu incremental mặc định trên Google Cloud Vertex AI",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.167.2"
+    },
+    {
+      "date": "2026-11-12T01:30:35.918400+00:00",
+      "headline": "Microsoft C++ Language Server trong GitHub Copilot CLI tự cấu hình build MSBuild, agent không cần tự dò lệnh build",
+      "url": "https://github.blog/changelog/2026-11-10-c-language-server-now-auto-configures-msbuild-builds"
     }
   ]
 }
