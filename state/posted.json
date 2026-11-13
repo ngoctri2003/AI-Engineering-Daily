@@ -369,6 +369,16 @@
       "date": "2026-11-12T01:30:35.918400+00:00",
       "headline": "Microsoft C++ Language Server trong GitHub Copilot CLI tự cấu hình build MSBuild, agent không cần tự dò lệnh build",
       "url": "https://github.blog/changelog/2026-11-10-c-language-server-now-auto-configures-msbuild-builds"
+    },
+    {
+      "date": "2026-11-13T01:30:30.305172+00:00",
+      "headline": "Claude Code v2.1.323 thêm Code Mode thử nghiệm: Claude viết JavaScript để gọi tool",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.323"
+    },
+    {
+      "date": "2026-11-13T01:30:30.305172+00:00",
+      "headline": "GitHub Actions ngừng hỗ trợ job ARM32 trên hosted runner Windows và Linux từ 8/12/2026",
+      "url": "https://github.blog/changelog/2026-11-12-actions-for-arm32-linux-windows-retirement"
     }
   ]
 }
