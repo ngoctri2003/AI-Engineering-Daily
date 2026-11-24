@@ -379,6 +379,16 @@
       "date": "2026-11-13T01:30:30.305172+00:00",
       "headline": "GitHub Actions ngừng hỗ trợ job ARM32 trên hosted runner Windows và Linux từ 8/12/2026",
       "url": "https://github.blog/changelog/2026-11-12-actions-for-arm32-linux-windows-retirement"
+    },
+    {
+      "date": "2026-11-24T01:30:26.867862+00:00",
+      "headline": "Claude Code v2.1.331 thêm Code Mode trong terminal trên Amazon Bedrock, Microsoft Foundry và nhiều nền tảng khác",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.331"
+    },
+    {
+      "date": "2026-11-24T01:30:26.867862+00:00",
+      "headline": "GitHub đưa issue statuses và repository boards vào public preview, cho phép đặt trạng thái issue cụ thể hơn open hoặc closed",
+      "url": "https://github.blog/changelog/2026-11-23-issue-statuses-and-repository-boards-are-in-public-preview"
     }
   ]
 }

@@ -348,6 +348,30 @@
       ],
       "headline": "Openwave Messaging Limited Webtop Media Transcoder Incorrect Resource Transfer Between Spheres Vulnerability",
       "url": "https://www.cve.org/CVERecord?id=CVE-2026-111793"
+    },
+    {
+      "date": "2026-11-24T01:30:26.867862+00:00",
+      "ids": [
+        "CVE-2026-134401"
+      ],
+      "headline": "Stable Channel Update for Desktop",
+      "url": "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html"
+    },
+    {
+      "date": "2026-11-24T01:30:26.867862+00:00",
+      "ids": [
+        "CVE-2026-133968"
+      ],
+      "headline": "Project MONAI MONAI Label Path Traversal Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-133968"
+    },
+    {
+      "date": "2026-11-24T01:30:26.867862+00:00",
+      "ids": [
+        "CVE-2026-134624"
+      ],
+      "headline": "N-able MailAssure (SpamExperts) Server-Side Request Forgery (SSRF) Vulnerability",
+      "url": "https://www.cve.org/CVERecord?id=CVE-2026-134624"
     }
   ]
 }
