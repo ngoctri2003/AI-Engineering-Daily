@@ -389,6 +389,21 @@
       "date": "2026-11-24T01:30:26.867862+00:00",
       "headline": "GitHub đưa issue statuses và repository boards vào public preview, cho phép đặt trạng thái issue cụ thể hơn open hoặc closed",
       "url": "https://github.blog/changelog/2026-11-23-issue-statuses-and-repository-boards-are-in-public-preview"
+    },
+    {
+      "date": "2026-11-25T01:30:32.706075+00:00",
+      "headline": "Codex 0.172.0 chỉ khởi động stdio MCP server ở lần gọi tool đầu tiên và cho phép approval reviewer riêng cho từng tool",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.172.0"
+    },
+    {
+      "date": "2026-11-25T01:30:32.706075+00:00",
+      "headline": "Gemini CLI v0.72.0-preview.0 bắt buộc bearer token và validate request input cho a2a-server",
+      "url": "https://github.com/google-gemini/gemini-cli/releases/tag/v0.72.0-preview.0"
+    },
+    {
+      "date": "2026-11-25T01:30:32.706075+00:00",
+      "headline": "Tool registry của agent nên được review như API, không phải file cấu hình",
+      "url": "https://dev.to/cyclopt_dimitrisk/your-agents-tool-registry-is-an-api-stop-reviewing-it-like-config-40op"
     }
   ]
 }
