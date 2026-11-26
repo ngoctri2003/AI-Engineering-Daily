@@ -404,6 +404,11 @@
       "date": "2026-11-25T01:30:32.706075+00:00",
       "headline": "Tool registry của agent nên được review như API, không phải file cấu hình",
       "url": "https://dev.to/cyclopt_dimitrisk/your-agents-tool-registry-is-an-api-stop-reviewing-it-like-config-40op"
+    },
+    {
+      "date": "2026-11-26T01:30:50.358063+00:00",
+      "headline": "Claude Code v2.1.332 thêm skills từ MCP server (beta) và hook PreSkillShellCommand để chặn lệnh shell trong skill",
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.332"
     }
   ]
 }
