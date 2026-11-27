@@ -409,6 +409,21 @@
       "date": "2026-11-26T01:30:50.358063+00:00",
       "headline": "Claude Code v2.1.332 thêm skills từ MCP server (beta) và hook PreSkillShellCommand để chặn lệnh shell trong skill",
       "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.332"
+    },
+    {
+      "date": "2026-11-27T01:30:53.662654+00:00",
+      "headline": "GitHub Copilot code review sẽ tính phí cho organization từ 30/12/2026 nếu chưa chọn cách billing",
+      "url": "https://github.blog/changelog/2026-11-25-copilot-code-review-billing-will-default-to-the-organization"
+    },
+    {
+      "date": "2026-11-27T01:30:53.662654+00:00",
+      "headline": "JetBrains phát hành Mellum2.1 Instruct, model 12B MoE trả lời nhanh hơn cho sub-agent và tool loop",
+      "url": "https://blog.jetbrains.com/ai/2026/11/mellum2-1-instruct-is-out-bringing-faster-answers-for-coding-agents/"
+    },
+    {
+      "date": "2026-11-27T01:30:53.662654+00:00",
+      "headline": "Bài dev.to về MCP: tool schema có thể đổi và quyền mở rộng âm thầm sau khi agent đã tin tưởng tool",
+      "url": "https://dev.to/katul1512/your-ai-agent-trusted-the-tool-the-tool-changed-overnight-2f65"
     }
   ]
 }
